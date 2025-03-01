@@ -131,40 +131,33 @@ def filtered_tickers(tickers):
             upper_band = bands_df['Upper_Band'].values
             lower_band = bands_df['Lower_Band'].values
             band_diff = (upper_band - lower_band) / lower_band
-            # slopes = np.diff(lower_band)
 
             stoch_Rsi = stoch_rsi(t, interval = minute5)
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
 
-            # last_ema = get_ema(t, interval = minute).iloc[1]
-            # pre_ema = get_ema(t, interval = minute).iloc[0]
             ema = get_ema(t, interval = minute)
-            df_ema = ema['ema'].values
+            df_ema = ema.values
+            # print(f'{t} {df_ema:,.1f}')
             ema_slopes = np.diff(df_ema)
-            # ema_rising = ema_slopes[0] <= ema_slopes[1] <= ema_slopes[2]
-            # ema_rising = pre_ema < last_ema
-            ema_rising = all(ema_slopes[i] <= ema_slopes[i + 1] for i in range(len(ema_slopes) - 1))
+            ema_rising = all(df_ema[i] < df_ema[i + 1] for i in range(len(df_ema)-1))
+            ema_increasing = all(ema_slopes[i] <= ema_slopes[i + 1] for i in range(len(ema_slopes) - 1))
 
             is_increasing = all(band_diff[i] > 0.015 for i in range(len(band_diff) - 1))
-            # is_increasing = band_diff > 0.02
-            # srsi_buy = (srsi_k[0] > srsi_k[1]) and (0 < srsi_k[1] < srsi_k[2] < 0.25)
-            # srsi_buy1 = srsi_k[0] < 0.1 and (srsi_k[0] <= srsi_d[0] or srsi_k[1] <= srsi_d[1])
-            # srsi_buy2 = srsi_k[2] > srsi_d[2] and 0.15 < srsi_k[2] < 0.35
             srsi_d_rising = 0.15 < srsi_d[2] < 0.3 and 0.15 < srsi_k[2] < 0.4 and srsi_d[2] < srsi_k[2]
-            # srsi_buybuy = srsi_buy1 and srsi_buy2
+
+            # print(f'{t} [test1] ema 상승: {ema_rising}')
+            # print(f'{t} [test2] ema 확대: {ema_increasing}')
 
             if ema_rising :
-                # print(f'{t} [con1] ema 상향: {pre_ema:,.3f} < {last_ema:,.3f}')
-                if is_increasing :
-                    print(f'{t} [con2] 볼린저 확대')
-                    # if srsi_buy1 :
-                    #     print(f'{t} [con3] srsi K < D')
-                    #     if srsi_buy2 :
-                    #         print(f'{t} [con4] srsi K > D')
-                    if srsi_d_rising :
-                        print(f'{t} [con3]srsi K-D 교차 상향 0.15 < D:{srsi_d[2]:,.2f} < K:{srsi_k[2]:,.2f} < 0.4')
-                        filtered_tickers.append(t)
+                print(f'{t} [con1] ema 상승: {ema_rising}')
+                if ema_increasing :
+                    print(f'{t} [con2] ema 확대: {ema_increasing}')
+                    if is_increasing :
+                        print(f'{t} [con3] 볼린저 확대')
+                        if srsi_d_rising :
+                            print(f'{t} [con4]srsi K-D 교차 상향 0.15 < D:{srsi_d[2]:,.2f} < K:{srsi_k[2]:,.2f} < 0.4')
+                            filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
             send_discord_message(f"filtered_tickers/Error processing ticker {t}: {e}")
@@ -206,7 +199,7 @@ def get_best_ticker():
                     if cur_price < day_price * 1.03:
                         if day_value >= krw_cri_day_value:   #and cur_price < day_price * 1.03:
                             filtering_tickers.append(ticker)
-
+                            
     except (KeyError, ValueError) as e:
         send_discord_message(f"get_best_ticker/티커 조회 중 오류 발생: {e}")
         time.sleep(second) 
