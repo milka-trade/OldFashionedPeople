@@ -237,7 +237,7 @@ def trade_buy(ticker):
     max_retries = 5
     buy_size = min(trade_Quant, krw*0.9995)
     cur_price = pyupbit.get_current_price(ticker)
-    last_ema = get_ema(ticker, interval = minute).iloc[3]
+    # last_ema = get_ema(ticker, interval = minute).iloc[3]
     
     attempt = 0 
        
@@ -250,9 +250,9 @@ def trade_buy(ticker):
         
         while attempt < max_retries:
             
-            print(f"[가격 확인 중]: {ticker} srsi_buy: {srsi_buy} / 현재가: {cur_price:,.2f} < ema:{last_ema:,.2f} / 시도: {attempt} - 최대: {max_retries}")
+            print(f"[가격 확인 중]: {ticker} srsi_buy: {srsi_buy} / 현재가: {cur_price:,.2f} / 시도: {attempt} - 최대: {max_retries}")
             
-            if srsi_buy and cur_price < last_ema:
+            if srsi_buy : #and cur_price < last_ema:
                 buy_attempts = 3
                 for i in range(buy_attempts):
                     try:
@@ -270,7 +270,7 @@ def trade_buy(ticker):
                 attempt += 1  # 시도 횟수 증가
                 time.sleep(2)
 
-        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} < ema:{last_ema:,.2f} / srsi_buy:{srsi_buy} / ")
+        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / srsi_buy:{srsi_buy} / ")
         return "Price not in range after max attempts", None
             
 def trade_sell(ticker):
