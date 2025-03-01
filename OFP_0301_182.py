@@ -238,7 +238,7 @@ def trade_buy(ticker):
     max_retries = 5
     buy_size = min(trade_Quant, krw*0.9995)
     cur_price = pyupbit.get_current_price(ticker)
-    last_ema = get_ema(ticker, interval = minute).iloc[1]
+    last_ema = get_ema(ticker, interval = minute5).iloc[1]
     
     attempt = 0 
        
