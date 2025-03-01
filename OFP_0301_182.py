@@ -145,7 +145,7 @@ def filtered_tickers(tickers):
             # is_increasing = band_diff > 0.02
             # srsi_buy = (srsi_k[0] > srsi_k[1]) and (0 < srsi_k[1] < srsi_k[2] < 0.25)
             srsi_buy1 = srsi_k[0] < 0.1 and (srsi_k[0] <= srsi_d[0] or srsi_k[1] <= srsi_d[1])
-            srsi_buy2 = srsi_k[2] > srsi_d[2] and 0.05 < srsi_k[1] < srsi_k[2] < 0.35
+            srsi_buy2 = srsi_k[2] > srsi_d[2] and 0.15 < srsi_k[2] < 0.35
             # srsi_buybuy = srsi_buy1 and srsi_buy2
 
             if ema_rising :
@@ -245,7 +245,7 @@ def trade_buy(ticker):
     stoch_Rsi = stoch_rsi(ticker, interval = minute5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
-    srsi_buy = srsi_d[2] < srsi_k[2]
+    srsi_buy = 0.15 < srsi_d[2] < srsi_k[2]
     
     if krw >= min_krw :
         
