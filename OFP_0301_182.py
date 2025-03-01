@@ -144,21 +144,22 @@ def filtered_tickers(tickers):
             is_increasing = all(band_diff[i] > 0.01 for i in range(len(band_diff) - 1))
             # is_increasing = band_diff > 0.02
             # srsi_buy = (srsi_k[0] > srsi_k[1]) and (0 < srsi_k[1] < srsi_k[2] < 0.25)
-            srsi_buy1 = srsi_k[0] < 0.1 and (srsi_k[0] <= srsi_d[0] or srsi_k[1] <= srsi_d[1])
-            srsi_buy2 = srsi_k[2] > srsi_d[2] and 0.15 < srsi_k[2] < 0.35
+            # srsi_buy1 = srsi_k[0] < 0.1 and (srsi_k[0] <= srsi_d[0] or srsi_k[1] <= srsi_d[1])
+            # srsi_buy2 = srsi_k[2] > srsi_d[2] and 0.15 < srsi_k[2] < 0.35
+            srsi_d_rising = 0.1 < srsi_d[2] < 0.3 and 0.1 < srsi_k[2] < 0.4 and srsi_d[2] < srsi_k[2]
             # srsi_buybuy = srsi_buy1 and srsi_buy2
 
             if ema_rising :
                 # print(f'{t} [con1] ema 상향: {pre_ema:,.3f} < {last_ema:,.3f}')
                 if is_increasing :
                     print(f'{t} [con2] 볼린저 확대')
-                    if srsi_buy1 :
-                        print(f'{t} [con3] srsi K < D')
-                        if srsi_buy2 :
-                            print(f'{t} [con4] srsi K > D')
-                        # if srsi_buybuy :
-                        #     print(f'{t} [con3-4]srsi K-D 교차 상향 {srsi_d[2]:,.2f} < {srsi_k[2]:,.2f}')
-                            filtered_tickers.append(t)
+                    # if srsi_buy1 :
+                    #     print(f'{t} [con3] srsi K < D')
+                    #     if srsi_buy2 :
+                    #         print(f'{t} [con4] srsi K > D')
+                    if srsi_d_rising :
+                        print(f'{t} [con3]srsi K-D 교차 상향 0.1 < D:{srsi_d[2]:,.2f} < K:{srsi_k[2]:,.2f}')
+                        filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
             send_discord_message(f"filtered_tickers/Error processing ticker {t}: {e}")
@@ -245,7 +246,7 @@ def trade_buy(ticker):
     stoch_Rsi = stoch_rsi(ticker, interval = minute5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
-    srsi_buy = 0.15 < srsi_d[2] < srsi_k[2]
+    srsi_buy = 0.15 < srsi_d[2] < srsi_k[2] < 0.4
     
     if krw >= min_krw :
         
@@ -290,7 +291,7 @@ def trade_sell(ticker):
     srsi_d = stoch_Rsi['%D'].values
 
     srsi_sell = srsi_d[2] > 0.7 and srsi_k[2] < srsi_d[2]
-    upper_boliinger = cur_price > up_Bol[3] and srsi_d[2] > 0.7
+    upper_boliinger = cur_price > up_Bol[3] and srsi_d[2] > 0.8
     upper_price = profit_rate >= min_rate and upper_boliinger
     middle_price = srsi_sell
 
