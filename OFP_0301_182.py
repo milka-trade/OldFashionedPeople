@@ -151,11 +151,11 @@ def filtered_tickers(tickers):
             if ema_rising :
                 # print(f'{t} [con1] ema 상향: {pre_ema:,.3f} < {last_ema:,.3f}')
                 if is_increasing :
-                    print(f'{t} [con2] 볼린저 확대: {is_increasing}')
+                    print(f'{t} [con2] 볼린저 확대')
                     if srsi_buy1 :
-                        print(f'{t} [con3] srsi K가 D 아래 : {srsi_buy1}')
+                        print(f'{t} [con3] srsi K < D')
                         if srsi_buy2 :
-                            print(f'{t} [con4] srsi: K가 D 상향:{srsi_buy2}')
+                            print(f'{t} [con4] srsi K > D')
                         # if srsi_buybuy :
                         #     print(f'{t} [con3-4]srsi K-D 교차 상향 {srsi_d[2]:,.2f} < {srsi_k[2]:,.2f}')
                             filtered_tickers.append(t)
@@ -271,7 +271,7 @@ def trade_buy(ticker):
                 attempt += 1  # 시도 횟수 증가
                 time.sleep(2)
 
-        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 시도횟수: {attempt} ")
+        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} < ema:{last_ema:,.2f} / srsi_buy:{srsi_buy} / ")
         return "Price not in range after max attempts", None
             
 def trade_sell(ticker):
