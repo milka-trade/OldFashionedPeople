@@ -144,19 +144,19 @@ def filtered_tickers(tickers):
             ema_increasing = all(ema_slopes[i] <= ema_slopes[i + 1] for i in range(len(ema_slopes) - 1))
 
             is_increasing = all(band_diff[i] > 0.015 for i in range(len(band_diff) - 1))
-            srsi_d_rising = 0.15 < srsi_d[2] < 0.3 and 0.15 < srsi_k[2] < 0.4 and srsi_d[2] < srsi_k[2]
+            srsi_d_rising = 0.15 < srsi_d[2] < 0.4 and 0.15 < srsi_k[2] < 0.4 and srsi_d[2] < srsi_k[2]
 
             # print(f'{t} [test1] ema 상승: {ema_rising}')
             # print(f'{t} [test2] ema 확대: {ema_increasing}')
 
-            if ema_rising :
-                print(f'{t} [con1] ema 상승: {ema_rising}')
-                if ema_increasing :
-                    print(f'{t} [con2] ema 확대: {ema_increasing}')
-                    if is_increasing :
-                        print(f'{t} [con3] 볼린저 확대')
+            if is_increasing :
+                print(f'{t} [con1] 볼린저 확대')
+                if ema_rising :
+                    print(f'{t} [con2] ema 상승')
+                    if ema_increasing :
+                        print(f'{t} [con3] ema 확대')
                         if srsi_d_rising :
-                            print(f'{t} [con4]srsi K-D 교차 상향 0.15 < D:{srsi_d[2]:,.2f} < K:{srsi_k[2]:,.2f} < 0.4')
+                            print(f'{t} [con4] srsi K-D 교차 0.15 < D:{srsi_d[2]:,.2f} < K:{srsi_k[2]:,.2f} < 0.4')
                             filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
