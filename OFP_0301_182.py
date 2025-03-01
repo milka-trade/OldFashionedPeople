@@ -22,12 +22,10 @@ minute5 = "minute5"
 second=1.0
 
 trade_Quant = 1_000_000
-bol_touch_time = 2
 min_rate = 0.6
 max_rate = 2.5
 min_krw = 50_000
 sell_time = 20
-bol_upper_time = 1
 cut_rate = -3.0
 
 
@@ -41,10 +39,9 @@ def send_discord_message(msg):
         time.sleep(5) 
 
 def get_user_input():
-    global trade_Quant, bol_upper_time, min_rate, max_rate, sell_time
+    global trade_Quant, min_rate, max_rate, sell_time
 
     trade_Quant = float(input("매수 금액 (예: 1_000_000): "))
-    bol_upper_time = int(input("볼린저 밴드 상단 접촉 횟수 (예: 1): "))
     min_rate = float(input("최소 수익률 (예: 0.5): "))
     max_rate = float(input("최대 수익률 (예: 2.5): "))
     sell_time = int(input("매도감시횟수 (예: 20): "))
