@@ -148,9 +148,9 @@ def filtered_tickers(tickers):
             srsi_d_rising = 0.05 < srsi_d[2] < 0.25 and 0.05 < srsi_k[2] < 0.3 and srsi_d[2] < srsi_k[2]
 
             if is_increasing :
-                print(f'{t} [con1] 볼린저 확대')
+                # print(f'{t} [con1] 볼린저 확대')
                 if ema_rising :
-                    print(f'{t} [con2] ema 상승')
+                    # print(f'{t} [con2] ema 상승')
                     if ema_increasing :
                         print(f'{t} [con3] ema 확대')
                         if srsi_d_rising :
@@ -165,7 +165,7 @@ def filtered_tickers(tickers):
 
 def get_best_ticker():
     selected_tickers = ["KRW-ETH", "KRW-BTC", "KRW-XRP", "KRW-SOL", "KRW-ADA", "KRW-HBAR", "KRW-XLM", "KRW-DOGE"]  #"KRW-BTC", 
-    excluded_tickers = ["KRW-QI", "KRW-ONX", "KRW-ETHF", "KRW-ETHW", "KRW-PURSE", "KRW-USDT", "KRW-BERA", "KRW-VTHO", "KRW-SBD", "KRW-JTO", "KRW-SCR", "KRW-VIRTUAL", "KRW-SOLVE", "KRW-IOST"]  # 제외할 코인 리스트
+    # excluded_tickers = ["KRW-QI", "KRW-ONX", "KRW-ETHF", "KRW-ETHW", "KRW-PURSE", "KRW-USDT", "KRW-BERA", "KRW-VTHO", "KRW-SBD", "KRW-JTO", "KRW-SCR", "KRW-VIRTUAL", "KRW-SOLVE", "KRW-IOST"]  # 제외할 코인 리스트
     balances = upbit.get_balances()
     held_coins = []
 
@@ -175,27 +175,27 @@ def get_best_ticker():
             held_coins.append(ticker)  # "KRW-코인명" 형태로 추가
     
     try:
-        df_criteria = pyupbit.get_ohlcv('KRW-ADA', interval="day", count=1)
-        time.sleep(0.1)
-        krw_cri_day_value = df_criteria['value'].iloc[0]  # KRW-SOL의 당일 거래량
-
+        # df_criteria = pyupbit.get_ohlcv('KRW-ADA', interval="day", count=1)
+        # time.sleep(0.1)
+        # krw_cri_day_value = df_criteria['value'].iloc[0]  # KRW-SOL의 당일 거래량
+# 
         all_tickers = pyupbit.get_tickers(fiat="KRW")
         filtering_tickers = []
 
         for ticker in all_tickers:
-            # if ticker in selected_tickers and ticker not in held_coins:
-            if ticker not in excluded_tickers or ticker in selected_tickers :
-                if ticker not in held_coins : 
+            if ticker in selected_tickers and ticker not in held_coins:
+            # if ticker not in excluded_tickers or ticker in selected_tickers :
+                # if ticker not in held_coins : 
 
                     df_day = pyupbit.get_ohlcv(ticker, interval="day", count=1)
                     time.sleep(second)
                     day_price = df_day['open'].iloc[0]
-                    day_value = df_day['value'].iloc[0]
+                    # day_value = df_day['value'].iloc[0]
                     
                     cur_price = pyupbit.get_current_price(ticker)
 
                     if cur_price < day_price * 1.03:
-                        if day_value >= krw_cri_day_value:   #and cur_price < day_price * 1.03:
+                        # if day_value >= krw_cri_day_value:   #and cur_price < day_price * 1.03:
                             filtering_tickers.append(ticker)
                             
     except (KeyError, ValueError) as e:
