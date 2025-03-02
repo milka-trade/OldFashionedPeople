@@ -69,7 +69,7 @@ def get_ema(ticker, interval = minute):
 
     if df is not None and not df.empty:
         df['ema'] = ta.trend.EMAIndicator(close=df['close'], window=20).ema_indicator()
-        return df['ema'].tail(3)  # EMA의 마지막 값 반환
+        return df['ema'].tail(2)  # EMA의 마지막 값 반환
     
     else:
         return 0  # 데이터가 없으면 0 반환
@@ -140,7 +140,7 @@ def filtered_tickers(tickers):
             srsi_d = stoch_Rsi['%D'].values
 
             cur_price = pyupbit.get_current_price(t)
-            last_ema = get_ema(t, interval = minute5).iloc[2]
+            last_ema = get_ema(t, interval = minute5).iloc[1]
             df_ema = get_ema(t, interval = minute).values
             ema_rising = df_ema[0] < df_ema[1]
             # print(f'{t} {df_ema[0]:,.2f} < {df_ema[1]:,.2f}')
@@ -150,19 +150,15 @@ def filtered_tickers(tickers):
             srsi_d_rising = 0.15 < srsi_k[2] < 0.35 and srsi_d[2] < srsi_k[2]
             under_ema = cur_price < last_ema
 
-            # print(f'{t} [test1] 볼린저 확대: {is_increasing}')
             if ema_rising :
                 print(f'{t} [con1] ema상향: {df_ema[0]:,.2f} < {df_ema[1]:,.2f}')
                 if is_increasing :
-                    print(f'{t} [con1] 볼린저 최소폭 유지')
-                    # if decreasing :
-                    #     print(f'{t} [con2] 볼린저 변화량 감소')
+                    print(f'{t} [con2] 볼린저 최소폭 유지')
                     if under_ema :
                         print(f'{t} [con3] 현재가 ema 하단')
-                        # send_discord_message(f'{t} [con4] 현재가 ema 하단')
                         if srsi_d_rising :
-                            print(f'{t} [con4] srsi K-D 교차 D: {srsi_d[2]:,.2f} < K: {srsi_k[2]:,.2f} < 0.45')
-                            send_discord_message(f'{t} [con3] srsi K-D 교차 D: {srsi_d[2]:,.2f} < K: {srsi_k[2]:,.2f} < 0.45')
+                            print(f'{t} [con4] srsi K-D 교차 D: {srsi_d[2]:,.2f} < K: {srsi_k[2]:,.2f} < 0.35')
+                            send_discord_message(f'{t} [con3] srsi K-D 교차 D: {srsi_d[2]:,.2f} < K: {srsi_k[2]:,.2f} < 0.35')
                             filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
@@ -236,7 +232,7 @@ def trade_buy(ticker):
     max_retries = 5
     buy_size = min(trade_Quant, krw*0.9995)
     cur_price = pyupbit.get_current_price(ticker)
-    last_ema = get_ema(ticker, interval = minute5).iloc[2]
+    last_ema = get_ema(ticker, interval = minute5).iloc[1]
     
     attempt = 0 
        
@@ -268,8 +264,8 @@ def trade_buy(ticker):
                 attempt += 1  # 시도 횟수 증가
                 time.sleep(2)
 
-        print(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 0.1 < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.4 / under_ema: {under_ema}")
-        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 0.1 < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.4 / under_ema: {under_ema}")
+        print(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35 / under_ema: {under_ema}")
+        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35 / under_ema: {under_ema}")
         return "Price not in range after max attempts", None
             
 def trade_sell(ticker):
@@ -371,7 +367,6 @@ def send_profit_report():
             time.sleep(5)
 
 trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
-# get_user_input()
 print(f'{trade_start} trading start')
 
 profit_report_thread = threading.Thread(target=send_profit_report)  # 수익률 보고 쓰레드 시작
