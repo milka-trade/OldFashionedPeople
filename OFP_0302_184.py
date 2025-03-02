@@ -69,7 +69,7 @@ def get_ema(ticker, interval = minute):
 
     if df is not None and not df.empty:
         df['ema'] = ta.trend.EMAIndicator(close=df['close'], window=20).ema_indicator()
-        return df['ema'].tail(4)  # EMA의 마지막 값 반환
+        return df['ema'].tail(3)  # EMA의 마지막 값 반환
     
     else:
         return 0  # 데이터가 없으면 0 반환
@@ -121,7 +121,7 @@ def get_bollinger_bands(ticker, interval = minute, window=20, std_dev=2):
         'Lower_Band': lower_band
     })
 
-    return bands_df.tail(4)
+    return bands_df.tail(3)
 
 def filtered_tickers(tickers):
     """특정 조건에 맞는 티커 필터링"""
@@ -129,7 +129,7 @@ def filtered_tickers(tickers):
     
     for t in tickers:
         try:
-            bands_df = get_bollinger_bands(t, interval = minute)
+            bands_df = get_bollinger_bands(t, interval = minute5)
             upper_band = bands_df['Upper_Band'].values
             lower_band = bands_df['Lower_Band'].values
             band_diff = (upper_band - lower_band) / lower_band
@@ -144,13 +144,15 @@ def filtered_tickers(tickers):
             ema_rising = all(df_ema[i] <= df_ema[i + 1] for i in range(len(df_ema)-1))
             # ema_increasing = all(ema_slopes[i] <= ema_slopes[i + 1] for i in range(len(ema_slopes) - 1))
 
-            is_increasing = all(band_diff[i] > 0.02 for i in range(len(band_diff) - 1))
+            # is_increasing = all(band_diff[i] > 0.025 for i in range(len(band_diff) - 1))
+            is_increasing = band_diff[len(band_diff) - 1] > 0.015 #for i in range(len(band_diff) - 1))
             srsi_d_rising = 0.05 < srsi_d[2] < 0.3 and 0.05 < srsi_k[2] < 0.3 and srsi_d[2] < srsi_k[2]
 
+            # print(f'{t} [test1] 볼린저 확대: {is_increasing}')
             if is_increasing :
-                # print(f'{t} [con1] 볼린저 확대')
+                print(f'{t} [con1] 볼린저 확대')
                 if ema_rising :
-                    # print(f'{t} [con2] ema 상승')
+                    print(f'{t} [con2] ema 상승')
                     # if ema_increasing :
                         # print(f'{t} [con3] ema 확대')
                     if srsi_d_rising :
@@ -236,7 +238,7 @@ def trade_buy(ticker):
     max_retries = 5
     buy_size = min(trade_Quant, krw*0.9995)
     cur_price = pyupbit.get_current_price(ticker)
-    last_ema = get_ema(ticker, interval = minute5).iloc[3]
+    last_ema = get_ema(ticker, interval = minute5).iloc[2]
     
     attempt = 0 
        
@@ -268,8 +270,8 @@ def trade_buy(ticker):
                 attempt += 1  # 시도 횟수 증가
                 time.sleep(2)
 
-        print(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 0.1 < srsi_d: {srsi_d:,.2f} < srsi_k: {srsi_k:,.2f} < 0.4 / under_ema: {under_ema}")
-        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 0.1 < srsi_d: {srsi_d:,.2f} < srsi_k: {srsi_k:,.2f} < 0.4 / under_ema: {under_ema}")
+        print(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 0.1 < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.4 / under_ema: {under_ema}")
+        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 0.1 < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.4 / under_ema: {under_ema}")
         return "Price not in range after max attempts", None
             
 def trade_sell(ticker):
@@ -288,7 +290,7 @@ def trade_sell(ticker):
     srsi_d = stoch_Rsi['%D'].values
 
     srsi_sell = srsi_d[2] > 0.7 and srsi_k[2] < srsi_d[2]
-    upper_boliinger = cur_price > up_Bol[3] and srsi_d[2] > 0.8
+    upper_boliinger = cur_price > up_Bol[2] and srsi_d[2] > 0.8
     upper_price = profit_rate >= min_rate and upper_boliinger
     middle_price = srsi_sell
     cut_time_price = srsi_k[2] < srsi_d[2]
@@ -315,7 +317,7 @@ def trade_sell(ticker):
 
                 if profit_rate >= max_rate or upper_price :
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                    print(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n upper_price: {upper_price} / srsi_d {srsi_d[1]:,.2f} > 0.7 / 시도 {attempts + 1} / {max_attempts}")
+                    print(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n upper_price: {upper_price} / srsi_d {srsi_d[2]:,.2f} > 0.7 / 시도 {attempts + 1} / {max_attempts}")
                     send_discord_message(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n upper_price: {upper_price} / srsi_d {srsi_d[2]:,.2f} > 0.7 / 시도 {attempts + 1} / {max_attempts}")
                     return sell_order
 
