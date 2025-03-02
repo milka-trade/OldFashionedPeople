@@ -236,21 +236,21 @@ def trade_buy(ticker):
     max_retries = 5
     buy_size = min(trade_Quant, krw*0.9995)
     cur_price = pyupbit.get_current_price(ticker)
-    # last_ema = get_ema(ticker, interval = minute5).iloc[3]
+    last_ema = get_ema(ticker, interval = minute5).iloc[3]
     
     attempt = 0 
        
     stoch_Rsi = stoch_rsi(ticker, interval = minute5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
-    srsi_buy = 0.5 < srsi_d[2] < srsi_k[2] < 0.4
-    # under_ema = cur_price < last_ema
+    srsi_buy = 0.1 < srsi_d[2] < srsi_k[2] < 0.4
+    under_ema = cur_price < last_ema
 
     if krw >= min_krw :
         while attempt < max_retries:
             print(f"[가격 확인 중]: {ticker} srsi_buy: {srsi_buy} / 현재가: {cur_price:,.2f} / 시도: {attempt} - 최대: {max_retries}")
             
-            if srsi_buy : #and under_ema :
+            if srsi_buy and under_ema :
                 buy_attempts = 3
                 for i in range(buy_attempts):
                     try:
@@ -268,8 +268,8 @@ def trade_buy(ticker):
                 attempt += 1  # 시도 횟수 증가
                 time.sleep(2)
 
-        print(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 0.5 < srsi_d: {srsi_d:,.2f} < srsi_k: {srsi_k:,.2f} < 0.4")
-        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 0.5 < srsi_d: {srsi_d:,.2f} < srsi_k: {srsi_k:,.2f} < 0.4")
+        print(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 0.1 < srsi_d: {srsi_d:,.2f} < srsi_k: {srsi_k:,.2f} < 0.4 / under_ema: {under_ema}")
+        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / 0.1 < srsi_d: {srsi_d:,.2f} < srsi_k: {srsi_k:,.2f} < 0.4 / under_ema: {under_ema}")
         return "Price not in range after max attempts", None
             
 def trade_sell(ticker):
