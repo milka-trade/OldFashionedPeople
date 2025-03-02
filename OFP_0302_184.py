@@ -140,16 +140,12 @@ def filtered_tickers(tickers):
 
             ema = get_ema(t, interval = minute)
             df_ema = ema.values
-            # print(f'{t} {df_ema:,.1f}')
             ema_slopes = np.diff(df_ema)
-            ema_rising = all(df_ema[i] < df_ema[i + 1] for i in range(len(df_ema)-1))
+            ema_rising = all(df_ema[i] <= df_ema[i + 1] for i in range(len(df_ema)-1))
             ema_increasing = all(ema_slopes[i] <= ema_slopes[i + 1] for i in range(len(ema_slopes) - 1))
 
             is_increasing = all(band_diff[i] > 0.015 for i in range(len(band_diff) - 1))
-            srsi_d_rising = 0.15 < srsi_d[2] < 0.4 and 0.15 < srsi_k[2] < 0.4 and srsi_d[2] < srsi_k[2]
-
-            # print(f'{t} [test1] ema 상승: {ema_rising}')
-            # print(f'{t} [test2] ema 확대: {ema_increasing}')
+            srsi_d_rising = 0.05 < srsi_d[2] < 0.25 and 0.05 < srsi_k[2] < 0.3 and srsi_d[2] < srsi_k[2]
 
             if is_increasing :
                 print(f'{t} [con1] 볼린저 확대')
@@ -239,14 +235,13 @@ def trade_buy(ticker):
     max_retries = 5
     buy_size = min(trade_Quant, krw*0.9995)
     cur_price = pyupbit.get_current_price(ticker)
-    # last_ema = get_ema(ticker, interval = minute).iloc[3]
     
     attempt = 0 
        
     stoch_Rsi = stoch_rsi(ticker, interval = minute5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
-    srsi_buy = 0.15 < srsi_d[2] < srsi_k[2] < 0.4
+    srsi_buy = 0.5 < srsi_d[2] < srsi_k[2] < 0.3
     
     if krw >= min_krw :
         
@@ -294,18 +289,19 @@ def trade_sell(ticker):
     upper_boliinger = cur_price > up_Bol[3] and srsi_d[2] > 0.8
     upper_price = profit_rate >= min_rate and upper_boliinger
     middle_price = srsi_sell
+    cut_time_price = srsi_k[2] < srsi_d[2]
 
     max_attempts = sell_time
     attempts = 0
 
     cut_time = datetime.now()
-    cut_start = cut_time.replace(hour=8, minute=40, second=00, microsecond=0)
-    cut_end = cut_time.replace(hour=8, minute=59, second=55, microsecond=0)
+    cut_start = cut_time.replace(hour=8, minute=55, second=00, microsecond=0)
+    cut_end = cut_time.replace(hour=9, minute=1, second=55, microsecond=0)
 
     if cut_start <= cut_time <= cut_end:      # 매도 제한시간이면
-        if upper_boliinger:
+        if cut_time_price :
             sell_order = upbit.sell_market_order(ticker, buyed_amount)
-            send_discord_message(f"[손절조건 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / upper_price: {upper_price} / srsi_d: {srsi_d[2]:,.2f} > srsi_k: {srsi_k[2]:,.2f}")
+            send_discord_message(f"[장시작전매도]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[2]:,.2f} > srsi_k: {srsi_k[2]:,.2f}")
         else:
             time.sleep(1)
             return None  
