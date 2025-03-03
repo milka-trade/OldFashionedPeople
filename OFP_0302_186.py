@@ -195,7 +195,7 @@ def get_best_ticker():
         for ticker in all_tickers:
             if ticker in selected_tickers and ticker not in held_coins:
 
-                df_day = pyupbit.get_ohlcv(ticker, interval="day", count=2)
+                df_day = pyupbit.get_ohlcv(ticker, interval="minute240", count=2)
                 time.sleep(second)
                 day_price_0 = df_day['open'].iloc[0]
                 day_price_1 = df_day['open'].iloc[1]
