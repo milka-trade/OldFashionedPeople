@@ -38,7 +38,7 @@ def get_user_input():
         try:
             trade_Quant = float(input("매수 금액 (예: 1_000_000): "))
             min_rate = float(input("최소 수익률 (예: 0.5): "))
-            max_rate = float(input("최대 수익률 (예: 10.0): "))
+            max_rate = float(input("최대 수익률 (예: 2.0): "))
             sell_time = int(input("매도감시횟수 (예: 20): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
@@ -195,15 +195,15 @@ def get_best_ticker():
         for ticker in all_tickers:
             if ticker in selected_tickers and ticker not in held_coins:
 
-                df_day = pyupbit.get_ohlcv(ticker, interval="minute240", count=2)
+                df_240min = pyupbit.get_ohlcv(ticker, interval="minute240", count=2)
                 time.sleep(second)
-                day_price_0 = df_day['open'].iloc[0]
-                day_price_1 = df_day['open'].iloc[1]
+                day_240min_0 = df_240min['open'].iloc[0]
+                day_240min_1 = df_240min['open'].iloc[1]
                 
                 cur_price = pyupbit.get_current_price(ticker)
 
-                if cur_price < day_price_0 * 1.1:
-                    if cur_price < day_price_1 * 1.05:
+                if cur_price < day_240min_0 * 1.05:
+                    if cur_price < day_240min_1 * 1.05:
                         filtering_tickers.append(ticker)
                             
     except (KeyError, ValueError) as e:
