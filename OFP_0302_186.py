@@ -16,8 +16,8 @@ upbit = pyupbit.Upbit(os.getenv("UPBIT_ACCESS"), os.getenv("UPBIT_SECRET"))
 
 count_200 = 200
 
-minute = "minute15"
-minute5 = "minute5"
+min15 = "minute15"
+min5 = "minute5"
 
 second=1.0
 min_krw = 50_000
@@ -64,7 +64,7 @@ def get_balance(ticker):
         return 0
     return 0
 
-def get_ema(ticker, interval = minute):
+def get_ema(ticker, interval = min15):
     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
     time.sleep(second)
 
@@ -75,7 +75,7 @@ def get_ema(ticker, interval = minute):
     else:
         return 0  # 데이터가 없으면 0 반환
 
-def stoch_rsi(ticker, interval = minute):
+def stoch_rsi(ticker, interval = min5):
     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
     time.sleep(second)
      
@@ -105,7 +105,7 @@ def stoch_rsi(ticker, interval = minute):
         
     return result_df.tail(3)
 
-def get_bollinger_bands(ticker, interval = minute, window=20, std_dev=2):
+def get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2):
     """특정 티커의 볼린저 밴드 상단 및 하단값을 가져오는 함수"""
     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
     time.sleep(second)
@@ -130,10 +130,10 @@ def filtered_tickers(tickers):
     
     for t in tickers:
         try:
-            df_ema = get_ema(t, interval = minute).values
-            ema_rising = df_ema[0] < df_ema[1]
+            # df_ema = get_ema(t, interval = min).values
+            # ema_rising = df_ema[0] < df_ema[1]
 
-            df = pyupbit.get_ohlcv(t, interval=minute5, count=4)
+            df = pyupbit.get_ohlcv(t, interval=min5, count=4)
             if df is None:
                 print(f"[filter_tickers] 데이터를 가져올 수 없습니다. {t}")
                 send_discord_message(f"[filter_tickers] 데이터를 가져올 수 없습니다: {t}")
@@ -141,7 +141,7 @@ def filtered_tickers(tickers):
             time.sleep(second)
             df_close = df['close'].values
 
-            bands_df = get_bollinger_bands(t, interval = minute5)
+            bands_df = get_bollinger_bands(t, interval = min5)
             upper_band = bands_df['Upper_Band'].values
             lower_band = bands_df['Lower_Band'].values
             band_diff = (upper_band - lower_band) / lower_band
@@ -153,23 +153,23 @@ def filtered_tickers(tickers):
             slopes = np.diff(lower_band)
             decreasing = all(slopes[i] >= slopes[i + 1] for i in range(len(slopes) - 1))
 
-            stoch_Rsi = stoch_rsi(t, interval = minute5)
+            stoch_Rsi = stoch_rsi(t, interval = min5)
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
             srsi_d_rising = 0.15 < srsi_k[2] < 0.35 and srsi_d[2] < srsi_k[2]
 
-            if ema_rising :
-                print(f'{t} [con1] EMA 상향: {df_ema[0]:,.2f} < {df_ema[1]:,.2f}')
-                if is_increasing :
-                    print(f'{t} [con2] BOL 최소폭')
-                    if low_boliinger :
-                        print(f'{t} [con3] BOL 하단 {bol_touch_time} 회 이상')
-                        if decreasing :
-                            print(f'{t} [con4] BOL 기울기 완만')
-                            if srsi_d_rising :
-                                print(f'{t} [con5] SRSI K-D 교차 srsi_d {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
-                                send_discord_message(f'{t} [con5] SRSI K-D 교차 srsi_d {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
-                                filtered_tickers.append(t)
+            # if ema_rising :
+            #     print(f'{t} [con1] EMA 상향: {df_ema[0]:,.2f} < {df_ema[1]:,.2f}')
+            if is_increasing :
+                print(f'{t} [con1] BOL 최소폭')
+                if low_boliinger :
+                    print(f'{t} [con2] BOL 하단 {bol_touch_time} 회 이상')
+                    if decreasing :
+                        print(f'{t} [con3] BOL 기울기 완만')
+                        if srsi_d_rising :
+                            print(f'{t} [con4] SRSI K-D 교차 srsi_d {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
+                            send_discord_message(f'{t} [con4] SRSI K-D 교차 srsi_d {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
+                            filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
             send_discord_message(f"filtered_tickers/Error processing ticker {t}: {e}")
@@ -223,7 +223,7 @@ def get_best_ticker():
     interest = 0  # 초기 수익률
 
     for ticker in filtered_list:   # 조회할 코인 필터링
-        df = pyupbit.get_ohlcv(ticker, interval=minute, count=10)
+        df = pyupbit.get_ohlcv(ticker, interval=min5, count=10)
         time.sleep(second)
         if df is None or df.empty:
             continue
@@ -243,11 +243,11 @@ def trade_buy(ticker):
     max_retries = 5
     buy_size = min(trade_Quant, krw*0.9995)
     cur_price = pyupbit.get_current_price(ticker)
-    last_ema = get_ema(ticker, interval = minute5).iloc[1]
+    last_ema = get_ema(ticker, interval = min5).iloc[1]
     
     attempt = 0 
        
-    stoch_Rsi = stoch_rsi(ticker, interval = minute5)
+    stoch_Rsi = stoch_rsi(ticker, interval = min5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     srsi_buy = 0.15 < srsi_k[2] < 0.35 and srsi_d[2] < srsi_k[2]
@@ -287,14 +287,14 @@ def trade_sell(ticker):
     cur_price = pyupbit.get_current_price(ticker)
     profit_rate = (cur_price - avg_buy_price) / avg_buy_price * 100 if avg_buy_price > 0 else 0  # 수익률 계산
 
-    bands_df = get_bollinger_bands(ticker, interval = minute5)
+    bands_df = get_bollinger_bands(ticker, interval = min5)
     up_Bol = bands_df['Upper_Band'].values
 
-    stoch_Rsi = stoch_rsi(ticker, interval = minute5)
+    stoch_Rsi = stoch_rsi(ticker, interval = min5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
 
-    srsi_sell = srsi_d[2] > 0.7 and srsi_k[2] < srsi_d[2]
+    srsi_sell = srsi_d[2] > srsi_k[2]
     upper_boliinger = cur_price > up_Bol[3] and srsi_d[2] > 0.8
     upper_price = profit_rate >= min_rate and upper_boliinger
     middle_price = srsi_sell
