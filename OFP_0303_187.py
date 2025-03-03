@@ -35,7 +35,7 @@ def send_discord_message(msg):
 def get_user_input():
     while True:
         try:
-            trade_Quant = float(input("매수 금액 (예: 1_000_000): "))
+            # trade_Quant = float(input("매수 금액 (예: 1_000_000): "))
             min_rate = float(input("최소 수익률 (예: 0.5): "))
             max_rate = float(input("최대 수익률 (예: 2.0): "))
             sell_time = int(input("매도감시횟수 (예: 20): "))
@@ -43,10 +43,10 @@ def get_user_input():
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
 
-    return trade_Quant, min_rate, max_rate, sell_time
+    return min_rate, max_rate, sell_time  #trade_Quant, 
 
 # 함수 호출 및 결과 저장
-trade_Quant, min_rate, max_rate, sell_time = get_user_input()
+min_rate, max_rate, sell_time = get_user_input()
 
 def get_balance(ticker):
     try:
@@ -157,7 +157,7 @@ def filtered_tickers(tickers):
             # if ema_rising :
             #     print(f'{t} [con1] EMA 상향: {df_ema[0]:,.2f} < {df_ema[1]:,.2f}')
             if is_increasing :
-                print(f'{t} [con1] BOL 최소폭')
+                # print(f'{t} [con1] BOL 최소폭')
                 if low_boliinger :
                     print(f'{t} [con2] BOL 하단 1회 이상')
                     if decreasing :
@@ -237,7 +237,8 @@ def trade_buy(ticker):
     
     krw = get_balance("KRW")
     max_retries = 5
-    buy_size = min(trade_Quant, krw*0.9995)
+    # buy_size = min(trade_Quant, krw*0.9995)
+    buy_size = krw*0.9995
     cur_price = pyupbit.get_current_price(ticker)
     last_ema = get_ema(ticker, interval = min5).iloc[1]
     
