@@ -33,7 +33,7 @@ def get_user_input():
         try:
             # trade_Quant = float(input("매수 금액 (예: 1_000_000): "))
             min_rate = float(input("최소 수익률 (예: 0.5): "))
-            max_rate = float(input("최대 수익률 (예: 2.0): "))
+            max_rate = float(input("최대 수익률 (예: 3.0): "))
             sell_time = int(input("매도감시횟수 (예: 20): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
@@ -147,7 +147,7 @@ def filtered_tickers(tickers):
             low_boliinger = count_below_lower_band >= 1
 
             slopes = np.diff(lower_band)
-            decreasing = all(slopes[i] >= slopes[i + 1] for i in range(len(slopes) - 1))
+            decreasing = all(slopes[i + 1] > slopes[i + 2] for i in range(len(slopes) - 2))
 
             stoch_Rsi = stoch_rsi(t, interval = min5)
             srsi_k = stoch_Rsi['%K'].values
@@ -159,9 +159,9 @@ def filtered_tickers(tickers):
             if is_increasing :
                 # print(f'{t} [con1] BOL 최소폭')
                 if low_boliinger :
-                    # print(f'{t} [con2] BOL 하단 1회 이상')
+                    print(f'{t} [con2] BOL 하단 1회 이상')
                     if decreasing :
-                        print(f'{t} [con3] BOL 기울기 완만')
+                        print(f'{t} [con3] BOL 기울기 완만: {slopes[1]} > {slopes[2]}')
                         if srsi_d_rising :
                             print(f'{t} [con4] SRSI K-D 교차 srsi_d {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
                             send_discord_message(f'{t} [con4] SRSI K-D 교차 srsi_d {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
