@@ -19,10 +19,6 @@ count_200 = 200
 min15 = "minute15"
 min5 = "minute5"
 
-second=1.0
-min_krw = 50_000
-cut_rate = -3.0
-
 def send_discord_message(msg):
     """discord 메시지 전송"""
     try:
@@ -47,6 +43,10 @@ def get_user_input():
 
 # 함수 호출 및 결과 저장
 min_rate, max_rate, sell_time = get_user_input()
+
+second=1.0
+min_krw = 50_000
+cut_rate = -2.0
 
 def get_balance(ticker):
     try:
@@ -161,7 +161,7 @@ def filtered_tickers(tickers):
                 if low_boliinger :
                     # print(f'{t} [con2] BOL 하단 1회 이상')
                     if decreasing :
-                        # print(f'{t} [con3] BOL 기울기 완만')
+                        print(f'{t} [con3] BOL 기울기 완만')
                         if srsi_d_rising :
                             print(f'{t} [con4] SRSI K-D 교차 srsi_d {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
                             send_discord_message(f'{t} [con4] SRSI K-D 교차 srsi_d {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
