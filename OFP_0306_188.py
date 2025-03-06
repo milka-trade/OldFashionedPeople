@@ -149,10 +149,10 @@ def filtered_tickers(tickers):
             slopes = np.diff(lower_band)
             decreasing = all(slopes[i] > slopes[i + 1] for i in range(len(slopes) - 1))
 
-            stoch_Rsi = stoch_rsi(t, interval = min5)
+            stoch_Rsi = stoch_rsi(t, interval = min15)
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
-            srsi_d_rising = srsi_d[2] < srsi_k[2] and 0.15 < srsi_d[2] < 0.35
+            srsi_d_rising = srsi_d[2] < srsi_k[2] and 0.1 < srsi_d[2] < 0.35
 
             if is_increasing :
                 # print(f'{t} [con1] BOL 최소폭')
@@ -172,7 +172,7 @@ def filtered_tickers(tickers):
     return filtered_tickers
 
 def get_best_ticker():
-    selected_tickers = ["KRW-ETH", "KRW-BTC", "KRW-XRP", "KRW-SOL", "KRW-ADA", "KRW-HBAR", "KRW-XLM", "KRW-DOGE"]
+    selected_tickers = ["KRW-ETH", "KRW-XRP", "KRW-SOL", "KRW-ADA", "KRW-HBAR", "KRW-XLM", "KRW-DOGE"]
     balances = upbit.get_balances()
     held_coins = []
 
@@ -242,7 +242,7 @@ def trade_buy(ticker):
     
     attempt = 0 
        
-    stoch_Rsi = stoch_rsi(ticker, interval = min5)
+    stoch_Rsi = stoch_rsi(ticker, interval = min15)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     srsi_buy = 0.15 < srsi_d[2] < 0.35 and srsi_d[2] < srsi_k[2]
@@ -291,13 +291,12 @@ def trade_sell(ticker):
     count_upper_band = sum(1 for i in range(len(up_Bol)) if df_close[i] > up_Bol[i])
     upper_boliinger = count_upper_band >= 1
 
-    stoch_Rsi = stoch_rsi(ticker, interval = min5)
+    stoch_Rsi = stoch_rsi(ticker, interval = min15)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
-    srsi_sell = srsi_d[2] > srsi_k[2]
     
-    upper_price = profit_rate >= min_rate and upper_boliinger and srsi_d[2] > 0.9
-    middle_price = srsi_sell
+    upper_price = upper_boliinger and srsi_d[2] > 0.8
+    middle_price = srsi_d[2] > srsi_k[2] or srsi_d[2] > 0.7
 
     max_attempts = sell_time
     attempts = 0
