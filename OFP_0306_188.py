@@ -157,9 +157,9 @@ def filtered_tickers(tickers):
             if is_increasing :
                 # print(f'{t} [con1] BOL 최소폭')
                 if low_boliinger :
-                    # print(f'{t} [con2] BOL 하단 1회 이상')
+                    print(f'{t} [con2] BOL 하단 1회 이상')
                     if decreasing :
-                        # print(f'{t} [con3] BOL 기울기 완만: {slopes[1]} > {slopes[2]}')
+                        print(f'{t} [con3] BOL 기울기 완만: {slopes[1]:,.2f} > {slopes[2]:,.2f}')
                         if srsi_d_rising :
                             print(f'{t} [con4] SRSI K-D 교차 srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
                             send_discord_message(f'{t} [con4] SRSI K-D 교차 srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
