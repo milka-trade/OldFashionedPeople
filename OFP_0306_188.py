@@ -146,21 +146,21 @@ def filtered_tickers(tickers):
             count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_close[i] < lower_band[i])
             low_boliinger = count_below_lower_band >= 1
 
-            # slopes = np.diff(lower_band)
-            # decreasing = all(slopes[i] > slopes[i + 1] for i in range(len(slopes) - 1))
+            slopes = np.diff(lower_band)
+            decreasing = all(slopes[i] > slopes[i + 1] for i in range(len(slopes) - 1))
 
             stoch_Rsi = stoch_rsi(t, interval = min15)
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
-            srsi_d_rising = srsi_d[2] < srsi_k[2] and 0.1 < srsi_d[2] < 0.35
+            srsi_d_rising = srsi_d[2] < srsi_k[2] and 0.15 < srsi_d[2] < 0.35
 
             if is_increasing :
                 # print(f'{t} [con1] BOL 최소폭')
                 if low_boliinger :
                     print(f'{t} [con2] BOL 하단 1회 이상')
-                    # if decreasing :
-                    #     print(f'{t} [con3] BOL 기울기 완만: {slopes[1]:,.2f} > {slopes[2]:,.2f}')
-                    if srsi_d_rising :
+                    if decreasing :
+                        print(f'{t} [con3] BOL 기울기 완만: {slopes[1]:,.2f} > {slopes[2]:,.2f}')
+                        if srsi_d_rising :
                             print(f'{t} [con3] SRSI K-D 교차 srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
                             send_discord_message(f'{t} [con4] SRSI K-D 교차 srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
                             filtered_tickers.append(t)
@@ -245,7 +245,7 @@ def trade_buy(ticker):
     stoch_Rsi = stoch_rsi(ticker, interval = min15)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
-    srsi_buy = 0.1 < srsi_d[2] < 0.35 and srsi_d[2] < srsi_k[2]
+    srsi_buy = 0.15 < srsi_d[2] < 0.35 and srsi_d[2] < srsi_k[2]
     under_ema = cur_price < last_ema
 
     if krw >= min_krw :
