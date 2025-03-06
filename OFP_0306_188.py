@@ -149,7 +149,7 @@ def filtered_tickers(tickers):
             slopes = np.diff(lower_band)
             decreasing = all(slopes[i] > slopes[i + 1] for i in range(len(slopes) - 1))
 
-            stoch_Rsi = stoch_rsi(t, interval = min15)
+            stoch_Rsi = stoch_rsi(t, interval = min5)
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
             srsi_d_rising = srsi_d[2] < srsi_k[2] and 0.15 < srsi_d[2] < 0.35
@@ -242,7 +242,7 @@ def trade_buy(ticker):
     
     attempt = 0 
        
-    stoch_Rsi = stoch_rsi(ticker, interval = min15)
+    stoch_Rsi = stoch_rsi(ticker, interval = min5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     srsi_buy = 0.15 < srsi_d[2] < 0.35 and srsi_d[2] < srsi_k[2]
@@ -291,12 +291,12 @@ def trade_sell(ticker):
     count_upper_band = sum(1 for i in range(len(up_Bol)) if df_close[i] > up_Bol[i])
     upper_boliinger = count_upper_band >= 1
 
-    stoch_Rsi = stoch_rsi(ticker, interval = min15)
+    stoch_Rsi = stoch_rsi(ticker, interval = min5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     srsi_sell = srsi_d[2] > srsi_k[2]
     
-    upper_price = profit_rate >= min_rate and upper_boliinger and srsi_d[2] > 0.8
+    upper_price = profit_rate >= min_rate and upper_boliinger and srsi_d[2] > 0.9
     middle_price = srsi_sell
 
     max_attempts = sell_time
