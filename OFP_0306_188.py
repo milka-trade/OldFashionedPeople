@@ -18,6 +18,8 @@ count_200 = 200
 
 min15 = "minute15"
 min5 = "minute5"
+# srsi_value_s = 0.1
+# srsi_value_e = 0.35
 
 def send_discord_message(msg):
     """discord 메시지 전송"""
@@ -35,20 +37,20 @@ def get_user_input():
             min_rate = float(input("최소 수익률 (예: 0.5): "))
             max_rate = float(input("최대 수익률 (예: 3.0): "))
             sell_time = int(input("매도감시횟수 (예: 20): "))
+            srsi_value_s = float(input("srsi 매수 시작 (예: 0.1): "))
+            srsi_value_e = float(input("srsi 매수 제한 (예: 0.35): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
 
-    return min_rate, max_rate, sell_time  #trade_Quant, 
+    return min_rate, max_rate, sell_time, srsi_value_s, srsi_value_e
 
 # 함수 호출 및 결과 저장
-min_rate, max_rate, sell_time = get_user_input()
+min_rate, max_rate, sell_time, srsi_value_s, srsi_value_e = get_user_input()
 
 second=1.0
 min_krw = 50_000
 cut_rate = -2.0
-srsi_value_s = 0.1
-srsi_value_e = 0.35
 
 def get_balance(ticker):
     try:
