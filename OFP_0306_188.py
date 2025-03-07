@@ -17,7 +17,7 @@ upbit = pyupbit.Upbit(os.getenv("UPBIT_ACCESS"), os.getenv("UPBIT_SECRET"))
 count_200 = 200
 
 min15 = "minute15"
-min5 = "minute5"
+# min5 = "minute5"
 # srsi_value_s = 0.1
 # srsi_value_e = 0.35
 
@@ -67,18 +67,18 @@ def get_balance(ticker):
         return 0
     return 0
 
-def get_ema(ticker, interval = min15):
-    df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
-    time.sleep(second)
+# def get_ema(ticker, interval = min15):
+#     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
+#     time.sleep(second)
 
-    if df is not None and not df.empty:
-        df['ema'] = ta.trend.EMAIndicator(close=df['close'], window=20).ema_indicator()
-        return df['ema'].tail(2)  # EMA의 마지막 값 반환
+#     if df is not None and not df.empty:
+#         df['ema'] = ta.trend.EMAIndicator(close=df['close'], window=20).ema_indicator()
+#         return df['ema'].tail(2)  # EMA의 마지막 값 반환
     
-    else:
-        return 0  # 데이터가 없으면 0 반환
+#     else:
+#         return 0  # 데이터가 없으면 0 반환
 
-def stoch_rsi(ticker, interval = min5):
+def stoch_rsi(ticker, interval = min15):
     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
     time.sleep(second)
      
@@ -108,7 +108,7 @@ def stoch_rsi(ticker, interval = min5):
         
     return result_df.tail(3)
 
-def get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2):
+def get_bollinger_bands(ticker, interval = min15, window=20, std_dev=2):
     """특정 티커의 볼린저 밴드 상단 및 하단값을 가져오는 함수"""
     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
     time.sleep(second)
