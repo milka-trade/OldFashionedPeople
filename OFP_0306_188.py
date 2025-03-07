@@ -47,6 +47,8 @@ min_rate, max_rate, sell_time = get_user_input()
 second=1.0
 min_krw = 50_000
 cut_rate = -2.0
+srsi_value_s = 0.1
+srsi_value_e = 0.35
 
 def get_balance(ticker):
     try:
@@ -146,23 +148,23 @@ def filtered_tickers(tickers):
             count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_close[i] < lower_band[i])
             low_boliinger = count_below_lower_band >= 1
 
-            slopes = np.diff(lower_band)
-            decreasing = all(slopes[i] > slopes[i + 1] for i in range(len(slopes) - 1))
+            # slopes = np.diff(lower_band)
+            # decreasing = all(slopes[i] > slopes[i + 1] for i in range(len(slopes) - 1))
 
             stoch_Rsi = stoch_rsi(t, interval = min15)
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
-            srsi_d_rising = srsi_d[2] < srsi_k[2] and 0.15 < srsi_d[2] < 0.35
+            srsi_d_rising = srsi_d[2] < srsi_k[2] and srsi_value_s < srsi_d[2] < srsi_value_e
 
             if is_increasing :
                 # print(f'{t} [con1] BOL 최소폭')
                 if low_boliinger :
                     print(f'{t} [con2] BOL 하단 1회 이상')
-                    if decreasing :
-                        print(f'{t} [con3] BOL 기울기 완만: {slopes[1]:,.2f} > {slopes[2]:,.2f}')
-                        if srsi_d_rising :
-                            print(f'{t} [con3] SRSI K-D 교차 srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
-                            send_discord_message(f'{t} [con4] SRSI K-D 교차 srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35')
+                    # if decreasing :
+                    #     print(f'{t} [con3] BOL 기울기 완만: {slopes[1]:,.2f} > {slopes[2]:,.2f}')
+                    if srsi_d_rising :
+                            print(f'{t} [con3] SRSI K-D 교차 {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            send_discord_message(f'{t} [con3] SRSI K-D 교차 {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                             filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
@@ -182,7 +184,6 @@ def get_best_ticker():
             held_coins.append(ticker)  # "KRW-코인명" 형태로 추가
     
     try:
-# 
         all_tickers = pyupbit.get_tickers(fiat="KRW")
         filtering_tickers = []
 
@@ -238,21 +239,21 @@ def trade_buy(ticker):
     # buy_size = min(trade_Quant, krw*0.9995)
     buy_size = krw*0.9995
     cur_price = pyupbit.get_current_price(ticker)
-    last_ema = get_ema(ticker, interval = min15).iloc[1]
+    # last_ema = get_ema(ticker, interval = min15).iloc[1]
     
     attempt = 0 
        
-    stoch_Rsi = stoch_rsi(ticker, interval = min15)
+    stoch_Rsi = stoch_rsi(ticker, interval = min5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
-    srsi_buy = 0.15 < srsi_d[2] < 0.35 and srsi_d[2] < srsi_k[2]
-    under_ema = cur_price < last_ema
+    srsi_buy = srsi_value_s < srsi_d[2] < srsi_value_e and srsi_d[2] < srsi_k[2]
+    # under_ema = cur_price < last_ema
 
     if krw >= min_krw :
         while attempt < max_retries:
             print(f"[가격 확인 중]: {ticker} srsi_buy: {srsi_buy} / 현재가: {cur_price:,.2f} / 시도: {attempt} - 최대: {max_retries}")
             
-            if srsi_buy and under_ema :
+            if srsi_buy :
                 buy_attempts = 3
                 for i in range(buy_attempts):
                     try:
@@ -270,8 +271,8 @@ def trade_buy(ticker):
                 attempt += 1  # 시도 횟수 증가
                 time.sleep(2)
 
-        print(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35 / under_ema: {under_ema}")
-        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < 0.35 / under_ema: {under_ema}")
+        print(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}")
+        send_discord_message(f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}")
         return "Price not in range after max attempts", None
             
 def trade_sell(ticker):
