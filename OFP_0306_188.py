@@ -161,7 +161,7 @@ def filtered_tickers(tickers):
             if is_increasing :
                 # print(f'{t} [con1] BOL 최소폭')
                 if low_boliinger :
-                    print(f'{t} [con2] BOL 하단 1회 이상')
+                    # print(f'{t} [con2] BOL 하단 1회 이상')
                     # if decreasing :
                     #     print(f'{t} [con3] BOL 기울기 완만: {slopes[1]:,.2f} > {slopes[2]:,.2f}')
                     if srsi_d_rising :
@@ -245,7 +245,7 @@ def trade_buy(ticker):
     
     attempt = 0 
        
-    stoch_Rsi = stoch_rsi(ticker, interval = min5)
+    stoch_Rsi = stoch_rsi(ticker, interval = min15)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     srsi_buy = srsi_value_s < srsi_d[2] < srsi_value_e and srsi_d[2] < srsi_k[2]
