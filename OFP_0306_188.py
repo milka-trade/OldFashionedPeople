@@ -35,10 +35,10 @@ def get_user_input():
         try:
             # trade_Quant = float(input("매수 금액 (예: 1_000_000): "))
             min_rate = float(input("최소 수익률 (예: 0.5): "))
-            max_rate = float(input("최대 수익률 (예: 3.0): "))
+            max_rate = float(input("최대 수익률 (예: 1.5): "))
             sell_time = int(input("매도감시횟수 (예: 20): "))
-            srsi_value_s = float(input("srsi 매수 시작 (예: 0.1): "))
-            srsi_value_e = float(input("srsi 매수 제한 (예: 0.35): "))
+            srsi_value_s = float(input("srsi 매수 시작 (예: 0.05): "))
+            srsi_value_e = float(input("srsi 매수 제한 (예: 0.3): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
@@ -48,7 +48,7 @@ def get_user_input():
 # 함수 호출 및 결과 저장
 min_rate, max_rate, sell_time, srsi_value_s, srsi_value_e = get_user_input()
 
-second=1.0
+second = 1.0
 min_krw = 50_000
 cut_rate = -2.0
 
@@ -298,8 +298,9 @@ def trade_sell(ticker):
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     
-    upper_price = upper_boliinger and srsi_d[2] > 0.8
-    middle_price = srsi_d[2] > srsi_k[2] or srsi_d[2] > 0.7
+    upper_price = upper_boliinger and srsi_d[2] > 0.85
+    middle_price = srsi_d[2] > srsi_k[2] or srsi_d[2] > 0.75
+    cut_price = srsi_d[2] > srsi_k[2]
 
     max_attempts = sell_time
     attempts = 0
@@ -309,7 +310,7 @@ def trade_sell(ticker):
     cut_end = cut_time.replace(hour=9, minute=1, second=55, microsecond=0)
 
     if cut_start <= cut_time <= cut_end:      # 매도 제한시간이면
-        if middle_price :
+        if cut_price :
             sell_order = upbit.sell_market_order(ticker, buyed_amount)
             print(f"[장시작전매도]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[2]:,.2f} > srsi_k: {srsi_k[2]:,.2f}")
             send_discord_message(f"[장시작전매도]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[2]:,.2f} > srsi_k: {srsi_k[2]:,.2f}")
@@ -324,7 +325,7 @@ def trade_sell(ticker):
 
                 if profit_rate >= max_rate or upper_price :
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                    print(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.8 < srsi_d {srsi_d[2]:,.2f}")
+                    print(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d {srsi_d[2]:,.2f}")
                     send_discord_message(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} /  0.8 < srsi_d {srsi_d[2]:,.2f}")
                     return sell_order
 
