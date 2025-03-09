@@ -146,7 +146,12 @@ def filtered_tickers(tickers):
             lower_band = bands_df['Lower_Band'].values
             band_diff = (upper_band - lower_band) / lower_band
 
-            is_increasing = 0.025 < band_diff[-1] #band_diff[len(band_diff) - 1] > 0.02 #for i in range(len(band_diff) - 1))
+            bands_df_15 = get_bollinger_bands(t, interval = min15)
+            upper_band_15 = bands_df_15['Upper_Band'].values
+            lower_band_15 = bands_df_15['Lower_Band'].values
+            band_diff_15 = (upper_band_15 - lower_band_15) / lower_band_15
+
+            is_increasing = 0.015 < band_diff[-1] #band_diff[len(band_diff) - 1] > 0.02 #for i in range(len(band_diff) - 1))
             count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_close[i] < lower_band[i])
             low_boliinger = count_below_lower_band >= 1
 
