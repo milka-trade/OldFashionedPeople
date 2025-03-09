@@ -161,8 +161,8 @@ def filtered_tickers(tickers):
                         # print(f'[con3] {t} decreasing: {decreasing}')
                         if srsi_d_rising :
                             test_time = datetime.now().strftime('%m/%d %H:%M:%S')
-                            print(f'{t} [con4] SRSI K-D 교차 {srsi_d_rising} 현재가: {cur_price:,1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
-                            send_discord_message(f'[{test_time}] {t} [con4] SRSI K-D 교차  현재가: {cur_price:,1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            print(f'{t} [con4] SRSI K-D 교차 {srsi_d_rising} 현재가: {cur_price:,.1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            send_discord_message(f'[{test_time}] {t} [con4] SRSI K-D 교차  현재가: {cur_price:,.1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                             filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
