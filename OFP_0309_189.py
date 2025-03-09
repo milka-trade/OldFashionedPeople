@@ -33,11 +33,11 @@ def send_discord_message(msg):
 def get_user_input():
     while True:
         try:
-            min_rate = float(input("최소 수익률 (예: 0.4): "))
+            min_rate = float(input("최소 수익률 (예: 0.3): "))
             max_rate = float(input("최대 수익률 (예: 1.5): "))
             srsi_value_s = float(input("srsi D 매수 시작 (예: 0.1): "))
             srsi_value_e = float(input("srsi D 매수 제한 (예: 0.3): "))
-            sell_time = int(input("매도감시횟수 (예: 25): "))
+            sell_time = int(input("매도감시횟수 (예: 20): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
@@ -147,7 +147,7 @@ def filtered_tickers(tickers):
             lower_band_15 = bands_df_15['Lower_Band'].values
             band_diff_15 = (upper_band_15 - lower_band_15) / lower_band_15
 
-            is_increasing = 0.03 < band_diff_15[-1] #band_diff[len(band_diff) - 1] > 0.02 #for i in range(len(band_diff) - 1))
+            is_increasing = 0.02 < band_diff[-1] #band_diff[len(band_diff) - 1] > 0.02 #for i in range(len(band_diff) - 1))
             count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_close_5[i] < lower_band[i])            
             count_below_lower_band_15 = sum(1 for i in range(len(lower_band_15)) if df_close_15[i] < lower_band_15[i] * 1.005)
             low_boliinger = count_below_lower_band >= 1 and count_below_lower_band_15 >= 1
