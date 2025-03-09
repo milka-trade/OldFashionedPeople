@@ -33,11 +33,11 @@ def send_discord_message(msg):
 def get_user_input():
     while True:
         try:
-            min_rate = float(input("최소 수익률 (예: 0.3): "))
+            min_rate = float(input("최소 수익률 (예: 0.4): "))
             max_rate = float(input("최대 수익률 (예: 1.5): "))
             srsi_value_s = float(input("srsi D 매수 시작 (예: 0.1): "))
             srsi_value_e = float(input("srsi D 매수 제한 (예: 0.3): "))
-            sell_time = int(input("매도감시횟수 (예: 20): "))
+            sell_time = int(input("매도감시횟수 (예: 25): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
