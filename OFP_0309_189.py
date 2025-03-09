@@ -33,7 +33,7 @@ def send_discord_message(msg):
 def get_user_input():
     while True:
         try:
-            min_rate = float(input("최소 수익률 (예: 0.4): "))
+            min_rate = float(input("최소 수익률 (예: 0.3): "))
             max_rate = float(input("최대 수익률 (예: 1.5): "))
             srsi_value_s = float(input("srsi D 매수 시작 (예: 0.1): "))
             srsi_value_e = float(input("srsi D 매수 제한 (예: 0.3): "))
@@ -129,31 +129,31 @@ def filtered_tickers(tickers):
             time.sleep(second)
             df_close_5 = df_5['close'].values
 
-            df_15 = pyupbit.get_ohlcv(t, interval=min15, count=6)
-            if df_15 is None:
-                print(f"[filter_tickers|df15] 데이터를 가져올 수 없습니다. {t}")
-                send_discord_message(f"[filter_tickers|df15] 데이터를 가져올 수 없습니다: {t}")
-                continue  # 다음 티커로 넘어감
-            time.sleep(second)
-            df_close_15 = df_15['close'].values
+            # df_15 = pyupbit.get_ohlcv(t, interval=min15, count=6)
+            # if df_15 is None:
+            #     print(f"[filter_tickers|df15] 데이터를 가져올 수 없습니다. {t}")
+            #     send_discord_message(f"[filter_tickers|df15] 데이터를 가져올 수 없습니다: {t}")
+            #     continue  # 다음 티커로 넘어감
+            # time.sleep(second)
+            # df_close_15 = df_15['close'].values
 
             bands_df = get_bollinger_bands(t, interval = min5)
             upper_band = bands_df['Upper_Band'].values
             lower_band = bands_df['Lower_Band'].values
             band_diff = (upper_band - lower_band) / lower_band
 
-            bands_df_15 = get_bollinger_bands(t, interval = min15)
+            slopes = np.diff(lower_band)
+            decreasing = all(abs(slopes[i]) > abs(slopes[i + 1]) for i in range(2, len(slopes) - 1))
+
+            # bands_df_15 = get_bollinger_bands(t, interval = min15)
             # upper_band_15 = bands_df_15['Upper_Band'].values
-            lower_band_15 = bands_df_15['Lower_Band'].values
+            # lower_band_15 = bands_df_15['Lower_Band'].values
             # band_diff_15 = (upper_band_15 - lower_band_15) / lower_band_15
 
             is_increasing = band_diff[-1] > 0.2 #band_diff[len(band_diff) - 1] > 0.02 #for i in range(len(band_diff) - 1))
             count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_close_5[i] < lower_band[i])            
-            count_below_lower_band_15 = sum(1 for i in range(len(lower_band_15)) if df_close_15[i] < lower_band_15[i] * 1.005)
-            low_boliinger = count_below_lower_band >= 1 and count_below_lower_band_15 >= 1
-
-            # slopes = np.diff(lower_band)
-            # decreasing = all(slopes[i] > slopes[i + 1] for i in range(len(slopes) - 1))
+            # count_below_lower_band_15 = sum(1 for i in range(len(lower_band_15)) if df_close_15[i] < lower_band_15[i] * 1.005)
+            low_boliinger = count_below_lower_band >= 1
 
             stoch_Rsi = stoch_rsi(t, interval = min5)
             srsi_k = stoch_Rsi['%K'].values
@@ -168,11 +168,12 @@ def filtered_tickers(tickers):
                 # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff_15: {band_diff_15[-1]:,.3f} > band_diff_5: {band_diff[-1]:,.3f}  \n [test2: {low_boliinger}] BOL 하단 1회 이상: low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} / low_bol15: {lower_band_15[-1]:,.1f} > df_close15 * 1.005: {df_close_15[-1] * 1.005:,.1f} \n [test3: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}]')
                 # print(f'[{test_time}] {t} \n lBand_15: {lower_band_15[-1]:,.4f} > df_close15: {df_close_15[3]:,.1f} \n lBand_5: {lower_band[-1]:,.4f} > df_close: {df_close_5[3]:,.1f}')
                 if low_boliinger :
-                    if srsi_d_rising :
-                        test_time = datetime.now().strftime('%m/%d %H:%M:%S')
-                        print(f'{t} [con3] SRSI K-D 교차 | 현재가: {cur_price:,1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
-                        send_discord_message(f'[{test_time}] {t} [con3] SRSI K-D 교차 | 현재가: {cur_price:,1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
-                        filtered_tickers.append(t)
+                    if decreasing :
+                        if srsi_d_rising :
+                            test_time = datetime.now().strftime('%m/%d %H:%M:%S')
+                            print(f'{t} [con3] SRSI K-D 교차 | 현재가: {cur_price:,1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            send_discord_message(f'[{test_time}] {t} [con3] SRSI K-D 교차 | 현재가: {cur_price:,1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
             send_discord_message(f"filtered_tickers/Error processing ticker {t}: {e}")
