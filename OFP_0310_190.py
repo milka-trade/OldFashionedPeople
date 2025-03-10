@@ -146,7 +146,7 @@ def filtered_tickers(tickers):
             stoch_Rsi = stoch_rsi(t, interval = min5)
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
-            srsi_d_rising = srsi_d[2] < srsi_k[2] and (srsi_value_s < srsi_d[2] < srsi_value_e)
+            srsi_d_rising = srsi_d[2] < srsi_k[2] and (srsi_value_s < srsi_d[1] < srsi_d[2] < srsi_value_e)
             
             stoch_Rsi_15 = stoch_rsi(t, interval = min15)
             srsi_k_15 = stoch_Rsi_15['%K'].values
@@ -161,13 +161,15 @@ def filtered_tickers(tickers):
                 # test_time = datetime.now().strftime('%m/%d %H:%M:%S')
                 # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[2]:,.2f} {srsi_value_e} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                 if low_boliinger :
-                    test_time = datetime.now().strftime('%m/%d %H:%M:%S')
-                    print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} < \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                    # test_time = datetime.now().strftime('%m/%d %H:%M:%S')
+                    # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} < {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                     if srsi_d_15_buy :
+                        test_time = datetime.now().strftime('%m/%d %H:%M:%S')
+                        print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} < {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                         if srsi_d_rising :
                             test_time = datetime.now().strftime('%m/%d %H:%M:%S')
                             # print(f'{t} [con4] SRSI K-D 교차 현재가: {cur_price:,.1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
-                            send_discord_message(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} < \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            send_discord_message(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} < {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                             filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
