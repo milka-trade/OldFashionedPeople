@@ -34,7 +34,7 @@ def get_user_input():
     while True:
         try:
             min_rate = float(input("최소 수익률 (예: 0.3): "))
-            max_rate = float(input("최대 수익률 (예: 1.5): "))
+            max_rate = float(input("최대 수익률 (예: 2.0): "))
             srsi_value_s = float(input("srsi D 매수 시작 (예: 0.1): "))
             srsi_value_e = float(input("srsi D 매수 제한 (예: 0.3): "))
             sell_time = int(input("매도감시횟수 (예: 25): "))
@@ -134,10 +134,10 @@ def filtered_tickers(tickers):
             lower_band = bands_df['Lower_Band'].values
             band_diff = (upper_band - lower_band) / lower_band
 
-            slopes = np.diff(lower_band)
+            # slopes = np.diff(lower_band)
             # print(slopes)
             # decreasing = all(abs(slopes[i]) > abs(slopes[i + 1]) for i in range(3, len(slopes) - 1))
-            decreasing = abs(slopes[-2]) > abs(slopes[-1])
+            # decreasing = abs(slopes[-2]) > abs(slopes[-1])
 
             is_increasing = band_diff[-1] > 0.025 
             count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_close_5[i] < lower_band[i])            
@@ -147,21 +147,23 @@ def filtered_tickers(tickers):
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
             srsi_d_rising = srsi_d[2] < srsi_k[2] and (srsi_value_s < srsi_d[2] < srsi_value_e)
+            
+            stoch_Rsi_15 = stoch_rsi(t, interval = min15)
+            srsi_d_15 = stoch_Rsi_15['%D'].values
+            srsi_d_15_buy = srsi_d_15[2] < srsi_value_e
 
             cur_price = pyupbit.get_current_price(t)
-
-            # test_time = datetime.now().strftime('%m/%d %H:%M:%S')
-            # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {decreasing}] slope[-2]: {abs(slopes[3]):,.2f} < slope[-1]: {abs(slopes[4]):,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}]')
+            
             if is_increasing :
-                # print(f'[con1] {t} is_increasing: {is_increasing}')
-                # print(f'{t} [con4] SRSI K-D 교차 {srsi_d_rising} 현재가: {cur_price:,.1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                test_time = datetime.now().strftime('%m/%d %H:%M:%S')
+                print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < 0.3 \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                 if low_boliinger :
                     # print(f'[con2] {t} low_bol: {low_boliinger}')
-                    if decreasing :
-                        # print(f'[con3] {t} decreasing: {decreasing}')
+                    if srsi_d_15_buy :
+                        print(f'[con3] {t} srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e}')
                         if srsi_d_rising :
                             test_time = datetime.now().strftime('%m/%d %H:%M:%S')
-                            print(f'{t} [con4] SRSI K-D 교차 {srsi_d_rising} 현재가: {cur_price:,.1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            print(f'{t} [con4] SRSI K-D 교차 현재가: {cur_price:,.1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                             send_discord_message(f'[{test_time}] {t} [con4] SRSI K-D 교차  현재가: {cur_price:,.1f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                             filtered_tickers.append(t)
                 
@@ -195,8 +197,8 @@ def get_best_ticker():
                 
                 cur_price = pyupbit.get_current_price(ticker)
 
-                if cur_price < day_240min_0 * 1.05:
-                    if cur_price < day_240min_1 * 1.05:
+                if day_240min_0 * 0.95 < cur_price < day_240min_0 * 1.05 :
+                    if day_240min_1 * 0.95 < cur_price < day_240min_1 * 1.05 :
                         filtering_tickers.append(ticker)
                             
     except (KeyError, ValueError) as e:
