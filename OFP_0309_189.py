@@ -139,7 +139,7 @@ def filtered_tickers(tickers):
             # decreasing = all(abs(slopes[i]) > abs(slopes[i + 1]) for i in range(3, len(slopes) - 1))
             # decreasing = abs(slopes[-2]) > abs(slopes[-1])
 
-            is_increasing = band_diff[-1] > 0.025 
+            is_increasing = band_diff[-1] > 0.02
             count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_close_5[i] < lower_band[i])            
             low_boliinger = count_below_lower_band >= 1
 
@@ -155,13 +155,15 @@ def filtered_tickers(tickers):
 
             cur_price = pyupbit.get_current_price(t)
             
+            test_time = datetime.now().strftime('%m/%d %H:%M:%S')
+            print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < srsi_k_15: {srsi_k_15[2]:,.2f} < {srsi_value_e} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')            
             if is_increasing :
-                test_time = datetime.now().strftime('%m/%d %H:%M:%S')
-                print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < srsi_k_15: {srsi_k_15[2]:,.2f} < {srsi_value_e} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                # test_time = datetime.now().strftime('%m/%d %H:%M:%S')
+                # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < srsi_k_15: {srsi_k_15[2]:,.2f} < {srsi_value_e} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                 if low_boliinger :
                     # print(f'[con2] {t} low_bol: {low_boliinger}')
                     # test_time = datetime.now().strftime('%m/%d %H:%M:%S')
-                    # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < srsi_k_15: {srsi_k_15[2]:,.2f} < {srsi_value_e} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                    # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < srsi_k_15: {srsi_k_15[2]:,.2f} < {srsi_value_e} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                     if srsi_d_15_buy :
                         print(f'[con3] {t} srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e}')
                         if srsi_d_rising :
