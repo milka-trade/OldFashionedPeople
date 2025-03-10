@@ -149,6 +149,7 @@ def filtered_tickers(tickers):
             srsi_d_rising = srsi_d[2] < srsi_k[2] and (srsi_value_s < srsi_d[2] < srsi_value_e)
             
             stoch_Rsi_15 = stoch_rsi(t, interval = min15)
+            srsi_k_15 = stoch_Rsi_15['%K'].values
             srsi_d_15 = stoch_Rsi_15['%D'].values
             srsi_d_15_buy = srsi_d_15[2] < srsi_value_e
 
@@ -156,9 +157,11 @@ def filtered_tickers(tickers):
             
             if is_increasing :
                 test_time = datetime.now().strftime('%m/%d %H:%M:%S')
-                print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < 0.3 \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
+                print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < srsi_k_15: {srsi_k_15[2]:,.2f} < {srsi_value_e} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                 if low_boliinger :
                     # print(f'[con2] {t} low_bol: {low_boliinger}')
+                    # test_time = datetime.now().strftime('%m/%d %H:%M:%S')
+                    # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 \n [test2: {low_boliinger}] low_bol: {lower_band[-1]:,.1f} > df_close: {df_close_5[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < srsi_k_15: {srsi_k_15[2]:,.2f} < {srsi_value_e} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f} < {srsi_value_e}')
                     if srsi_d_15_buy :
                         print(f'[con3] {t} srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e}')
                         if srsi_d_rising :
