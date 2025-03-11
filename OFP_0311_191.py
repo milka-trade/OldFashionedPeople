@@ -139,11 +139,6 @@ def filtered_tickers(tickers):
             lower_band15 = bands_df15['Lower_Band'].values
             # band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
-            # slopes = np.diff(lower_band)
-            # print(slopes)
-            # decreasing = all(abs(slopes[i]) > abs(slopes[i + 1]) for i in range(3, len(slopes) - 1))
-            # decreasing = abs(slopes[-2]) > abs(slopes[-1])
-
             is_increasing = band_diff[-1] > 0.02
             count_below_lower_band15 = sum(1 for i in range(len(lower_band15)) if df_close_15[i] < lower_band15[i])            
             low_boliinger = count_below_lower_band15 >= 1
@@ -151,12 +146,12 @@ def filtered_tickers(tickers):
             stoch_Rsi_15 = stoch_rsi(t, interval = min15)
             srsi_k_15 = stoch_Rsi_15['%K'].values
             srsi_d_15 = stoch_Rsi_15['%D'].values
-            srsi_d_15_buy = srsi_d_15[2] <= srsi_value_e 
+            srsi_d_15_buy = srsi_d_15[2] <= srsi_value_e and srsi_k_15[1] < srsi_k_15[2]
 
             stoch_Rsi = stoch_rsi(t, interval = min5)
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
-            srsi_d_rising = srsi_d[2] <= srsi_k[2] and (srsi_value_s <= srsi_d[2] <= srsi_value_e) and srsi_k[1] <= srsi_k[2]
+            srsi_d_rising = srsi_d[2] < srsi_k[2] and (srsi_value_s <= srsi_d[2] <= srsi_value_e) and srsi_k[1] < srsi_k[2]
             
             # cur_price = pyupbit.get_current_price(t)
             test_time = datetime.now().strftime('%m/%d %H:%M:%S')
@@ -165,9 +160,9 @@ def filtered_tickers(tickers):
             if is_increasing :
                 # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
                 if low_boliinger :
-                    # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
+                    print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
                     if srsi_d_15_buy :
-                        print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
+                        # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
                         if srsi_d_rising :
                             send_discord_message(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
                             filtered_tickers.append(t)
