@@ -190,16 +190,24 @@ def get_best_ticker():
         for ticker in all_tickers:
             if ticker in selected_tickers and ticker not in held_coins:
 
-                df_240min = pyupbit.get_ohlcv(ticker, interval="minute240", count=2)
+                df_15 = pyupbit.get_ohlcv(ticker, interval=min15, count=3)
                 time.sleep(second)
-                day_240min_0 = df_240min['open'].iloc[0]
-                day_240min_1 = df_240min['open'].iloc[1]
-                
-                cur_price = pyupbit.get_current_price(ticker)
+                df_open_0 = df_15['open'].iloc[0]
+                df_open_1 = df_15['open'].iloc[1]
+                df_open_2 = df_15['open'].iloc[2]
 
-                if day_240min_0 * 0.95 < cur_price < day_240min_0 * 1.05 :
-                    if day_240min_1 * 0.95 < cur_price < day_240min_1 * 1.05 :
-                        filtering_tickers.append(ticker)
+                df_close_0 = df_15['open'].iloc[0]
+                df_close_1 = df_15['open'].iloc[1]
+                df_close_2 = df_15['open'].iloc[2]
+                
+                candle_cond0 = df_close_0 < df_open_0 * 1.03
+                candle_cond1 = df_close_1 < df_open_1 * 1.03
+                candle_cond2 = df_close_2 < df_open_2 * 1.03
+
+                # cur_price = pyupbit.get_current_price(ticker)
+
+                if candle_cond0 and candle_cond1 and candle_cond2 :
+                    filtering_tickers.append(ticker)
                             
     except (KeyError, ValueError) as e:
         send_discord_message(f"get_best_ticker/티커 조회 중 오류 발생: {e}")
@@ -381,7 +389,7 @@ def send_profit_report():
                     srsi_k15 = stoch_Rsi_15['%K'].values
                     srsi_d15 = stoch_Rsi_15['%D'].values
 
-                    report_message += f" \n [{b['currency']}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {b['avg_buy_price']:,.0f} \n"
+                    report_message += f"[{b['currency']}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {b['avg_buy_price']} \n"
 
                     if len(srsi_d) > 2 and len(srsi_k) > 2 and len(srsi_d15) > 2 and len(srsi_k15) > 2:
                         report_message += f"srsi_d15: {srsi_d15[1]:,.2f} -> {srsi_d15[2]:,.2f} / srsi_k15: {srsi_k15[1]:,.2f} -> {srsi_k15[2]:,.2f} \n"
