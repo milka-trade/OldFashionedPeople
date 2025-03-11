@@ -156,15 +156,15 @@ def filtered_tickers(tickers):
             # cur_price = pyupbit.get_current_price(t)
             test_time = datetime.now().strftime('%m/%d %H:%M:%S')
             
-            # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
+            print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02')
             if is_increasing :
-                # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
+                # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
                 if low_boliinger :
-                    print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
+                    # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
                     if srsi_d_15_buy :
-                        # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
+                        # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
                         if srsi_d_rising :
-                            send_discord_message(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.2f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} < {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            send_discord_message(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
                             filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
@@ -245,7 +245,7 @@ def trade_buy(ticker):
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     # srsi_buy = srsi_value_s < srsi_d[2] < srsi_value_e and srsi_d[2] < srsi_k[2]
-    srsi_buy = srsi_d[2] <= srsi_k[2] and (srsi_value_s <= srsi_d[2] <= srsi_value_e) and srsi_k[1] <= srsi_k[2]
+    srsi_buy = srsi_d[2] < srsi_k[2] and (srsi_value_s <= srsi_d[2] <= srsi_value_e) and srsi_k[1] < srsi_k[2]
     # srsi_d_rising = srsi_d[2] <= srsi_k[2] and (srsi_value_s <= srsi_d[2] <= srsi_value_e) and srsi_k[1] <= srsi_k[2]
 
     if krw >= min_krw :
@@ -322,8 +322,8 @@ def trade_sell(ticker):
 
                 if profit_rate >= max_rate or upper_price :
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                    print(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f}")
-                    send_discord_message(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} /  0.85 < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[2]:,.2f}")
+                    print(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_BOL: {upper_boliinger} / srsi_d: {srsi_d[2]:,.2f} > 0.85 / srsi_k: {srsi_k[2]:,.2f}")
+                    send_discord_message(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_BOL: {upper_boliinger} / srsi_d: {srsi_d[2]:,.2f} > 0.85 / srsi_k: {srsi_k[2]:,.2f}")
                     return sell_order
 
                 else:
