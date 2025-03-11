@@ -146,7 +146,7 @@ def filtered_tickers(tickers):
             stoch_Rsi_15 = stoch_rsi(t, interval = min15)
             srsi_k_15 = stoch_Rsi_15['%K'].values
             srsi_d_15 = stoch_Rsi_15['%D'].values
-            srsi_d_15_buy = srsi_d_15[2] < srsi_k_15[2] and srsi_d_15[2] <= srsi_value_e and srsi_k_15[1] < srsi_k_15[2]
+            srsi_d_15_buy = srsi_d_15[2] <= srsi_value_e and srsi_k_15[1] < srsi_k_15[2]
 
             stoch_Rsi = stoch_rsi(t, interval = min5)
             srsi_k = stoch_Rsi['%K'].values
@@ -196,13 +196,13 @@ def get_best_ticker():
                 df_open_1 = df_15['open'].iloc[1]
                 df_open_2 = df_15['open'].iloc[2]
 
-                df_close_0 = df_15['open'].iloc[0]
-                df_close_1 = df_15['open'].iloc[1]
-                df_close_2 = df_15['open'].iloc[2]
+                df_high_0 = df_15['high'].iloc[0]
+                df_high_1 = df_15['high'].iloc[1]
+                df_high_2 = df_15['high'].iloc[2]
                 
-                candle_cond0 = df_close_0 < df_open_0 * 1.03
-                candle_cond1 = df_close_1 < df_open_1 * 1.03
-                candle_cond2 = df_close_2 < df_open_2 * 1.03
+                candle_cond0 = df_high_0 < df_open_0 * 1.03
+                candle_cond1 = df_high_1 < df_open_1 * 1.03
+                candle_cond2 = df_high_2 < df_open_2 * 1.03
 
                 # cur_price = pyupbit.get_current_price(ticker)
 
