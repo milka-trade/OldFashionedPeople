@@ -172,7 +172,8 @@ def filtered_tickers(tickers):
                 print(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 / band_diff15: {band_diff15[-1]:,.3f} > 0.045')
                 # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 / band_diff15: {band_diff15[-1]:,.3f} > 0.045 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
                 if low_boliinger :
-                    print(f'[{test_time}] {t} \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f}')
+                    # print(f'[{test_time}] {t} \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f}')
+                    print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 / band_diff15: {band_diff15[-1]:,.3f} > 0.045 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
                     if srsi_d_15_buy :
                         # print(f'[{test_time}] {t} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f}')
                         if srsi_d_rising :
