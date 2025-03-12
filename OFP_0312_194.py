@@ -150,7 +150,9 @@ def filtered_tickers(tickers):
             lower_band15 = bands_df15['Lower_Band'].values
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
-            is_increasing = band_diff[-1] > 0.025 and band_diff15[-1] > 0.045
+            band_diff_margin = 0.02
+            band_diff_15_margin = 0.04
+            is_increasing = band_diff[-1] > band_diff_margin and band_diff15[-1] > band_diff_15_margin
             count_below_lower_band15 = sum(1 for i in range(len(lower_band15)) if df_close_15[i] < lower_band15[i])
             low_boliinger = count_below_lower_band15 >= 1
 
@@ -167,18 +169,16 @@ def filtered_tickers(tickers):
             # cur_price = pyupbit.get_current_price(t)
             test_time = datetime.now().strftime('%m/%d %H:%M:%S')
             
-            # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 / band_diff15: {band_diff15[-1]:,.3f} > 0.045 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
+            # print(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > {band_diff_margin} / band_diff15: {band_diff15[-1]:,.3f} > {band_diff_15_margin} \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [cond4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
             if is_increasing :
-                print(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 / band_diff15: {band_diff15[-1]:,.3f} > 0.045')
-                # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 / band_diff15: {band_diff15[-1]:,.3f} > 0.045 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
+                print(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > {band_diff_margin} / band_diff15: {band_diff15[-1]:,.3f} > {band_diff_15_margin} \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [cond4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
                 if low_boliinger :
-                    # print(f'[{test_time}] {t} \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f}')
-                    print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 / band_diff15: {band_diff15[-1]:,.3f} > 0.045 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
+                    # print(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > {band_diff_margin} / band_diff15: {band_diff15[-1]:,.3f} > {band_diff_15_margin} \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [cond4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
                     if srsi_d_15_buy :
-                        # print(f'[{test_time}] {t} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f}')
+                        # print(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > {band_diff_margin} / band_diff15: {band_diff15[-1]:,.3f} > {band_diff_15_margin} \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [cond4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
                         if srsi_d_rising :
-                            print(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 / band_diff15: {band_diff15[-1]:,.3f} > 0.045 \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [cond4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
-                            send_discord_message(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.025 / band_diff15: {band_diff15[-1]:,.3f} > 0.045 \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [cond4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            # print(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > {band_diff_margin} / band_diff15: {band_diff15[-1]:,.3f} > {band_diff_15_margin} \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [cond4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            send_discord_message(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > {band_diff_margin} / band_diff15: {band_diff15[-1]:,.3f} > {band_diff_15_margin} \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [cond4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e}')
                             filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
@@ -280,7 +280,7 @@ def trade_buy(ticker):
                 for i in range(buy_attempts):
                     try:
                         buy_order = upbit.buy_market_order(ticker, buy_size)
-                        send_discord_message(f"매수 성공: {ticker} / 현재가 :{cur_price:,.2f} / {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}")
+                        send_discord_message(f"매수 성공: {ticker} / 현재가 :{cur_price:,.2f} / {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}")
                         return buy_order
 
                     except (KeyError, ValueError) as e:
@@ -355,8 +355,8 @@ def trade_sell(ticker):
                 
             if middle_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                print(f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[2]:,.2f} > srsi_k: {srsi_k[2]:,.2f}")
-                send_discord_message(f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[2]:,.2f} > srsi_k: {srsi_k[2]:,.2f}")
+                print(f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                send_discord_message(f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                 return sell_order   
             else:
                 middle_price_time = datetime.now().strftime('%m/%d %H:%M:%S')
@@ -380,8 +380,8 @@ def send_profit_report():
             now = datetime.now()  # 현재 시간을 루프 시작 시마다 업데이트
             next_hour = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
             time_until_next_hour = (next_hour - now).total_seconds()
-
-            report_message = "현재 수익률 보고서:\n"
+            report_time = datetime.now().strftime('%m/%d %H:%M:%S')
+            report_message = f"[{report_time}] 현재 수익률 보고서:\n"
             balances = upbit.get_balances()
 
             # balances가 리스트인지 확인
