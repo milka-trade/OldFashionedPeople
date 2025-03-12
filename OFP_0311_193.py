@@ -72,7 +72,7 @@ def get_ema(ticker, interval = min5):
 
     if df is not None and not df.empty:
         df['ema'] = ta.trend.EMAIndicator(close=df['close'], window=20).ema_indicator()
-        return df['ema'].tail(1)  # EMA의 마지막 값 반환
+        return df['ema'].tail(2)  # EMA의 마지막 값 반환
     
     else:
         return 0  # 데이터가 없으면 0 반환
@@ -167,16 +167,16 @@ def filtered_tickers(tickers):
             # cur_price = pyupbit.get_current_price(t)
             test_time = datetime.now().strftime('%m/%d %H:%M:%S')
             
-            # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
+            # print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
             if is_increasing :
                 # print(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02')
-                print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
+                print(f'[{test_time}] {t} \n [test1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [test2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [test3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
                 if low_boliinger :
                     # print(f'[{test_time}] {t} \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f}')
                     if srsi_d_15_buy :
                         # print(f'[{test_time}] {t} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [test4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
                         if srsi_d_rising :
-                            send_discord_message(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [cond4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
+                            send_discord_message(f'[{test_time}] {t} \n [cond1: {is_increasing}] band_diff: {band_diff[-1]:,.3f} > 0.02 \n [cond2: {low_boliinger}] low_bol: {lower_band15[-1]:,.1f} > df_close: {df_close_15[-1]:,.1f} \n [cond3: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n [cond4: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} < {srsi_value_e}')
                             filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
@@ -370,45 +370,102 @@ def trade_sell(ticker):
             else:
                 return None  
 
+# def send_profit_report():
+#     first_run = True  # 처음 실행 여부를 체크하는 변수
+
+#     while True:
+#         try:
+#             now = datetime.now()  # 현재 시간을 루프 시작 시마다 업데이트 (try 루프안에 있어야 실시간 업데이트 주의)
+#             next_hour = (now + timedelta(hours = 1)).replace(minute = 0, second = 0, microsecond = 0)   # 다음 정시 시간을 계산 (현재 시간의 분, 초를 0으로 만들어 정시로 맞춤)
+#             time_until_next_hour = (next_hour - now).total_seconds()
+
+#             report_message = "현재 수익률 보고서:\n"
+#             balances = upbit.get_balances()     
+                        
+#             for b in balances:
+#                 if b['currency'] in ["KRW", "QI", "ONX", "ETHF", "ETHW", "PURSE"]:  # 제외할 코인 리스트
+#                     continue
+
+#                 ticker = f"KRW-{b['currency']}"
+#                 buyed_amount = float(b['balance'])
+                
+#                 if buyed_amount > 0:
+#                     avg_buy_price = float(b['avg_buy_price'])
+#                     cur_price = pyupbit.get_current_price(ticker)
+#                     profit_rate = (cur_price - avg_buy_price) / avg_buy_price * 100 if avg_buy_price > 0 else 0
+
+#                     stoch_Rsi = stoch_rsi(ticker, interval = min5)
+#                     srsi_k = stoch_Rsi['%K'].values
+#                     srsi_d = stoch_Rsi['%D'].values
+
+#                     stoch_Rsi_15 = stoch_rsi(ticker, interval = min15)
+#                     srsi_k15 = stoch_Rsi_15['%K'].values
+#                     srsi_d15 = stoch_Rsi_15['%D'].values
+
+#                     report_message += f"[{b['currency']}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {b['avg_buy_price']} \n"
+
+#                     if len(srsi_d) > 2 and len(srsi_k) > 2 and len(srsi_d15) > 2 and len(srsi_k15) > 2:
+#                         report_message += f"srsi_d15: {srsi_d15[1]:,.2f} -> {srsi_d15[2]:,.2f} / srsi_k15: {srsi_k15[1]:,.2f} -> {srsi_k15[2]:,.2f} \n"
+#                         report_message += f"srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} / srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} \n \n"
+#                     else:
+#                         report_message += "RSI 데이터가 충분하지 않습니다.\n"
+#                 # 처음 실행 시 보고서 전송
+#                 if first_run:
+#                     send_discord_message(report_message)
+#                     first_run = False  # 첫 실행 후 변경
+#                 else:
+#                     time.sleep(time_until_next_hour)  # 다음 정시까지 대기
+#                     send_discord_message(report_message)
+
+#         except (KeyError, ValueError) as e:          
+#             print(f"send_profit_report/수익률 보고 중 오류 발생: {e}")
+#             send_discord_message(f"send_profit_report/수익률 보고 중 오류 발생: {e}")
+#             time.sleep(5)
+
 def send_profit_report():
     first_run = True  # 처음 실행 여부를 체크하는 변수
 
     while True:
         try:
-            now = datetime.now()  # 현재 시간을 루프 시작 시마다 업데이트 (try 루프안에 있어야 실시간 업데이트 주의)
-            next_hour = (now + timedelta(hours = 1)).replace(minute = 0, second = 0, microsecond = 0)   # 다음 정시 시간을 계산 (현재 시간의 분, 초를 0으로 만들어 정시로 맞춤)
+            now = datetime.now()  # 현재 시간을 루프 시작 시마다 업데이트
+            next_hour = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
             time_until_next_hour = (next_hour - now).total_seconds()
 
             report_message = "현재 수익률 보고서:\n"
-            balances = upbit.get_balances()     
-                        
-            for b in balances:
-                if b['currency'] in ["KRW", "QI", "ONX", "ETHF", "ETHW", "PURSE"]:  # 제외할 코인 리스트
-                    continue
+            balances = upbit.get_balances()
 
-                ticker = f"KRW-{b['currency']}"
-                buyed_amount = float(b['balance'])
-                
-                if buyed_amount > 0:
-                    avg_buy_price = float(b['avg_buy_price'])
-                    cur_price = pyupbit.get_current_price(ticker)
-                    profit_rate = (cur_price - avg_buy_price) / avg_buy_price * 100 if avg_buy_price > 0 else 0
+            # balances가 리스트인지 확인
+            if isinstance(balances, list):
+                for b in balances:
+                    # b가 딕셔너리인지 확인
+                    if isinstance(b, dict) and 'currency' in b:
+                        if b['currency'] in ["KRW", "QI", "ONX", "ETHF", "ETHW", "PURSE"]:
+                            continue
 
-                    stoch_Rsi = stoch_rsi(ticker, interval = min5)
-                    srsi_k = stoch_Rsi['%K'].values
-                    srsi_d = stoch_Rsi['%D'].values
+                        ticker = b['currency']  # 티커를 currency로 설정
+                        buyed_amount = get_balance(ticker)  # get_balance 함수 사용
 
-                    stoch_Rsi_15 = stoch_rsi(ticker, interval = min15)
-                    srsi_k15 = stoch_Rsi_15['%K'].values
-                    srsi_d15 = stoch_Rsi_15['%D'].values
+                        if buyed_amount > 0:
+                            avg_buy_price = float(b['avg_buy_price'])
+                            cur_price = pyupbit.get_current_price(f"KRW-{ticker}")
+                            profit_rate = (cur_price - avg_buy_price) / avg_buy_price * 100 if avg_buy_price > 0 else 0
 
-                    report_message += f"[{b['currency']}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {b['avg_buy_price']} \n"
+                            stoch_Rsi = stoch_rsi(f"KRW-{ticker}", interval=min5)
+                            srsi_k = stoch_Rsi['%K'].values
+                            srsi_d = stoch_Rsi['%D'].values
 
-                    if len(srsi_d) > 2 and len(srsi_k) > 2 and len(srsi_d15) > 2 and len(srsi_k15) > 2:
-                        report_message += f"srsi_d15: {srsi_d15[1]:,.2f} -> {srsi_d15[2]:,.2f} / srsi_k15: {srsi_k15[1]:,.2f} -> {srsi_k15[2]:,.2f} \n"
-                        report_message += f"srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} / srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} \n \n"
-                    else:
-                        report_message += "RSI 데이터가 충분하지 않습니다.\n"
+                            stoch_Rsi_15 = stoch_rsi(f"KRW-{ticker}", interval=min15)
+                            srsi_k15 = stoch_Rsi_15['%K'].values
+                            srsi_d15 = stoch_Rsi_15['%D'].values
+
+                            report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {buyed_amount:.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
+
+                            if len(srsi_d) > 2 and len(srsi_k) > 2 and len(srsi_d15) > 2 and len(srsi_k15) > 2:
+                                report_message += f"srsi_d15: {srsi_d15[1]:,.2f} -> {srsi_d15[2]:,.2f} / srsi_k15: {srsi_k15[1]:,.2f} -> {srsi_k15[2]:,.2f} \n"
+                                report_message += f"srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} / srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} \n \n"
+                            else:
+                                report_message += "RSI 데이터가 충분하지 않습니다.\n"
+
                 # 처음 실행 시 보고서 전송
                 if first_run:
                     send_discord_message(report_message)
@@ -417,11 +474,16 @@ def send_profit_report():
                     time.sleep(time_until_next_hour)  # 다음 정시까지 대기
                     send_discord_message(report_message)
 
-        except (KeyError, ValueError) as e:          
+            else:
+                print("balances는 리스트가 아닙니다.")
+                send_discord_message("balances는 리스트가 아닙니다.")
+                time.sleep(5)
+
+        except (KeyError, ValueError) as e:
             print(f"send_profit_report/수익률 보고 중 오류 발생: {e}")
             send_discord_message(f"send_profit_report/수익률 보고 중 오류 발생: {e}")
             time.sleep(5)
-
+            
 trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
 print(f'{trade_start} trading start')
 
