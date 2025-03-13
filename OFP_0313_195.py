@@ -151,9 +151,9 @@ def filtered_tickers(tickers):
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
             band_diff_margin = 0.02
-            band_diff_15_margin = 0.03
-            is_increasing_5 = band_diff[-2] < band_diff[-1] and band_diff[-1] > band_diff_margin
-            is_increasing_15 = band_diff15[-2] < band_diff15[-1] and band_diff15[-1]> band_diff_15_margin
+            band_diff_15_margin = 0.025
+            is_increasing_5 = band_diff[-2] <= band_diff[-1] and band_diff[-1] > band_diff_margin
+            is_increasing_15 = band_diff15[-2] <= band_diff15[-1] and band_diff15[-1]> band_diff_15_margin
             count_below_lower_band15 = sum(1 for i in range(len(lower_band15)) if df_close_15[i] < lower_band15[i])
             low_boliinger = count_below_lower_band15 >= 1
 
@@ -177,9 +177,9 @@ def filtered_tickers(tickers):
             filtering_message += f"[cond4: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n"
             filtering_message += f"[cond5: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e} \n"
 
-            # print(filtering_message)
+            print(filtering_message)
             if is_increasing_15 :
-                print(filtering_message)
+                # print(filtering_message)
                 if is_increasing_5 :
                     # print(filtering_message)
                     if low_boliinger :
@@ -338,13 +338,12 @@ def trade_sell(ticker):
     cut_time = datetime.now()
     cut_start = cut_time.replace(hour=8, minute=55, second=00, microsecond=0)
     cut_end = cut_time.replace(hour=9, minute=1, second=55, microsecond=0)
-    sell_time = datetime.now().strftime('%m/%d %H:%M:%S')
 
     if cut_start <= cut_time <= cut_end:      # 매도 제한시간이면
         if cut_price :
             sell_order = upbit.sell_market_order(ticker, buyed_amount)
-            print(f"[장시작전매도]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-            send_discord_message(f"[장시작전매도]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+            print(f"[장시작전매도]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+            send_discord_message(f"[장시작전매도]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
         else:
             time.sleep(1)
             return None  
@@ -356,8 +355,8 @@ def trade_sell(ticker):
 
                 if profit_rate >= max_rate or upper_price :
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                    print(f"[!!목표가 달성!!]: [{sell_time}] [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-                    send_discord_message(f"[!!목표가 달성!!]: [{sell_time}] [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                    print(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                    send_discord_message(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                     return sell_order
 
                 else:
@@ -366,19 +365,18 @@ def trade_sell(ticker):
                 
             if middle_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                print(f"[m_price 도달]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-                send_discord_message(f"[m_price 도달]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                print(f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                send_discord_message(f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                 return sell_order   
             else:
-                
-                print(f"[m_price 미도달]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-                send_discord_message(f"[m_price 미도달]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                print(f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                send_discord_message(f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                 return None
         else:
             if profit_rate < cut_rate:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                print(f"[손절_CutRate]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f}< srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-                send_discord_message(f"[손절_CutRate]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f}< srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                print(f"[손절_CutRate]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f}< srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                send_discord_message(f"[손절_CutRate]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f}< srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
             else:
                 return None  
 
