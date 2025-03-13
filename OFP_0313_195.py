@@ -151,9 +151,9 @@ def filtered_tickers(tickers):
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
             band_diff_margin = 0.02
-            band_diff_15_margin = 0.035
-            is_increasing_5 = band_diff[-1] > band_diff_margin
-            is_increasing_15 = band_diff15[-1] > band_diff_15_margin
+            band_diff_15_margin = 0.03
+            is_increasing_5 = band_diff[-2] < band_diff[-1] and band_diff[-1] > band_diff_margin
+            is_increasing_15 = band_diff15[-2] < band_diff15[-1] and band_diff15[-1]> band_diff_15_margin
             count_below_lower_band15 = sum(1 for i in range(len(lower_band15)) if df_close_15[i] < lower_band15[i])
             low_boliinger = count_below_lower_band15 >= 1
 
@@ -171,8 +171,8 @@ def filtered_tickers(tickers):
             test_time = datetime.now().strftime('%m/%d %H:%M:%S')
             
             filtering_message = f"[{test_time}] {t} \n"
-            filtering_message += f"[cond1: {is_increasing_15}] band_diff15: {band_diff15[-1]:,.3f} > {band_diff_15_margin} \n"
-            filtering_message += f"[cond2: {is_increasing_5}] band_diff: {band_diff[-1]:,.3f} > {band_diff_margin} \n"
+            filtering_message += f"[cond1: {is_increasing_15}] band_diff15: {band_diff15[-2]:,.3f} -> {band_diff15[-1]:,.3f} > {band_diff_15_margin} \n"
+            filtering_message += f"[cond2: {is_increasing_5}] band_diff: {band_diff[-2]:,.3f} -> {band_diff[-1]:,.3f} > {band_diff_margin} \n"
             filtering_message += f"[cond3: {low_boliinger}] low_bol: {lower_band15[-1]:,.2f} > df_close: {df_close_15[-1]:,.2f} \n"
             filtering_message += f"[cond4: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[1]:,.2f} -> {srsi_d_15[2]:,.2f} < {srsi_value_e} / srsi_k_15: {srsi_k_15[1]:,.2f} -> {srsi_k_15[2]:,.2f} \n"
             filtering_message += f"[cond5: {srsi_d_rising}] {srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[1]:,.2f} < {srsi_k[2]:,.2f} < {srsi_value_e} \n"
