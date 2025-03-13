@@ -179,7 +179,7 @@ def filtered_tickers(tickers):
 
             # print(filtering_message)
             if is_increasing_15 :
-                print(filtering_message)
+                # print(filtering_message)
                 if is_increasing_5 :
                     # print(filtering_message)
                     if low_boliinger :
@@ -341,10 +341,9 @@ def trade_sell(ticker):
 
     if cut_start <= cut_time <= cut_end:      # 매도 제한시간이면
         if cut_price :
-            sell_time = datetime.now().strftime('%m/%d %H:%M:%S')
             sell_order = upbit.sell_market_order(ticker, buyed_amount)
-            print(f"[장시작전매도]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-            send_discord_message(f"[장시작전매도]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+            print(f"[장시작전매도]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+            send_discord_message(f"[장시작전매도]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
         else:
             time.sleep(1)
             return None  
@@ -355,10 +354,9 @@ def trade_sell(ticker):
                 print(f"[{ticker}] / [매도시도 {attempts + 1} / {max_attempts}] / 수익률: {profit_rate:.2f}% / upper_price : {upper_price}")
 
                 if profit_rate >= max_rate or upper_price :
-                    sell_time = datetime.now().strftime('%m/%d %H:%M:%S')
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                    print(f"[!!목표가 달성!!]: [{sell_time}] [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-                    send_discord_message(f"[!!목표가 달성!!]: [{sell_time}] [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                    print(f"[!!목표가 달성!!]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                    send_discord_message(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                     return sell_order
 
                 else:
@@ -366,22 +364,19 @@ def trade_sell(ticker):
                 attempts += 1  # 조회 횟수 증가
                 
             if middle_price:
-                sell_time = datetime.now().strftime('%m/%d %H:%M:%S')
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                print(f"[m_price 도달]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-                send_discord_message(f"[m_price 도달]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                print(f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                send_discord_message(f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                 return sell_order   
             else:
-                sell_time = datetime.now().strftime('%m/%d %H:%M:%S')
-                print(f"[m_price 미도달]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-                send_discord_message(f"[m_price 미도달]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                print(f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                send_discord_message(f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                 return None
         else:
             if profit_rate < cut_rate:
-                sell_time = datetime.now().strftime('%m/%d %H:%M:%S')
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                print(f"[손절_CutRate]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f}< srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-                send_discord_message(f"[손절_CutRate]: [{sell_time}] [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f}< srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                print(f"[손절_CutRate]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f}< srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                send_discord_message(f"[손절_CutRate]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f}< srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
             else:
                 return None  
 
