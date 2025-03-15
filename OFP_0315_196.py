@@ -34,10 +34,10 @@ def get_user_input():
     while True:
         try:
             min_rate = float(input("최소 수익률 (예: 0.3): "))
-            max_rate = float(input("최대 수익률 (예: 3.0): "))
-            srsi_value_s = float(input("srsi D 매수 시작 (예: 0.1): "))
-            srsi_value_e = float(input("srsi D 매수 제한 (예: 0.3): "))
-            sell_time = int(input("매도감시횟수 (예: 30): "))
+            max_rate = float(input("최대 수익률 (예: 3.1): "))
+            srsi_value_s = float(input("srsi D 매수 시작 (예: 0.05): "))
+            srsi_value_e = float(input("srsi D 매수 제한 (예: 0.4): "))
+            sell_time = int(input("매도감시횟수 (예: 10): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
@@ -150,9 +150,9 @@ def filtered_tickers(tickers):
             lower_band15 = bands_df15['Lower_Band'].values
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
-            band_diff_margin = 0.01
+            band_diff_margin = 0.02
             band_diff_15_margin = 0.015
-            srsi_value15_e = 0.4
+            # srsi_value15_e = 0.4
             is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
             count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < lower_band15[i] * 1.005)
@@ -168,7 +168,7 @@ def filtered_tickers(tickers):
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
             # srsi_d_rising = srsi_d[2] < srsi_k[2] and (srsi_value_s <= srsi_d[2] <= srsi_value_e) and srsi_k[1] < srsi_k[2]
-            srsi_d_rising = srsi_d[-1] < srsi_k[-1] and (srsi_value_s <= srsi_d[-1] <= srsi_value_e) and (srsi_d[-2] > srsi_k[-2] or srsi_d[-3] > srsi_k[-3])
+            srsi_d_rising = srsi_d[-1] < srsi_k[-1] and (srsi_value_s <= srsi_d[-1] <= srsi_value_e) #and (srsi_d[-2] > srsi_k[-2] or srsi_d[-3] > srsi_k[-3])
             srsi_diff = abs(srsi_k - srsi_d)
             srsi_increasing = 0 < srsi_diff[0] <= srsi_diff[1] <= srsi_diff[2] 
             # srsi_diff = abs((srsi_k[-3] - srsi_d[-3])) <= abs((srsi_k[-2] - srsi_d[-2])) <= abs((srsi_k[-1] - srsi_d[-1]))
