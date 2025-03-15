@@ -150,8 +150,9 @@ def filtered_tickers(tickers):
             lower_band15 = bands_df15['Lower_Band'].values
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
-            band_diff_margin = 0.015
+            band_diff_margin = 0.01
             band_diff_15_margin = 0.015
+            srsi_value15_e = 0.4
             is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
             count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < lower_band15[i])
@@ -161,7 +162,7 @@ def filtered_tickers(tickers):
             srsi_k_15 = stoch_Rsi_15['%K'].values
             srsi_d_15 = stoch_Rsi_15['%D'].values
             # srsi_d_15_buy = srsi_value_s <= srsi_k_15[-1] and srsi_d_15[2]<= srsi_value_e and srsi_k_15[1] < srsi_k_15[2]
-            srsi_d_15_buy = srsi_d_15[-1] < srsi_k_15[-1] < srsi_value_e and (srsi_d_15[-2] > srsi_k_15[-2] or srsi_d_15[-3] > srsi_k_15[-3])
+            srsi_d_15_buy = srsi_d_15[-1] < srsi_k_15[-1] < srsi_value15_e #and (srsi_d_15[-2] > srsi_k_15[-2] or srsi_d_15[-3] > srsi_k_15[-3])
 
             stoch_Rsi = stoch_rsi(t, interval = min5)
             srsi_k = stoch_Rsi['%K'].values
@@ -181,11 +182,11 @@ def filtered_tickers(tickers):
 
             # print(filtering_message)
             if is_increasing_15 :
-                print(filtering_message)
+                # print(filtering_message)
                 if is_increasing_5 :
                     # print(filtering_message)
                     if low_boliinger :
-                        # print(filtering_message)
+                        print(filtering_message)
                         if srsi_d_15_buy :
                             # print(filtering_message)
                             if srsi_d_rising :
