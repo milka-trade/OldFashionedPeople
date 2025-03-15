@@ -155,7 +155,7 @@ def filtered_tickers(tickers):
             srsi_value15_e = 0.4
             is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
-            count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < lower_band15[i] * 1.001)
+            count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < lower_band15[i] * 1.005)
             low_boliinger = count_below_lower_band >= 1
 
             # stoch_Rsi_15 = stoch_rsi(t, interval = min15)
