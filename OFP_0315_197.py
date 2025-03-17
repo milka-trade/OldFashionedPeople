@@ -34,7 +34,7 @@ def get_user_input():
     while True:
         try:
             min_rate = float(input("최소 수익률 (예: 0.35): "))
-            max_rate = float(input("최대 수익률 (예: 3.1): "))
+            max_rate = float(input("최대 수익률 (예: 1.1): "))
             srsi_value_s = float(input("srsi D 매수 시작 (예: 0.05): "))
             srsi_value_e = float(input("srsi D 매수 제한 (예: 0.4): "))
             sell_time = int(input("매도감시횟수 (예: 15): "))
@@ -164,37 +164,25 @@ def filtered_tickers(tickers):
             slopes_1 = (abs(slopes[-1]) / lower_band[-2]) * 100
             low_band_slope_decreasing = slopes_2 > slopes_1
 
-            # stoch_Rsi_15 = stoch_rsi(t, interval = min15)
-            # srsi_k_15 = stoch_Rsi_15['%K'].values
-            # srsi_d_15 = stoch_Rsi_15['%D'].values
-            # srsi_d_15_buy = srsi_value_s <= srsi_k_15[-1] and srsi_d_15[2]<= srsi_value_e and srsi_k_15[1] < srsi_k_15[2]
-            # srsi_d_15_buy = srsi_d_15[-1] < srsi_k_15[-1] < srsi_value15_e #and (srsi_d_15[-2] > srsi_k_15[-2] or srsi_d_15[-3] > srsi_k_15[-3])
-
             stoch_Rsi = stoch_rsi(t, interval = min5)
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
-            # srsi_d_rising = srsi_d[2] < srsi_k[2] and (srsi_value_s <= srsi_d[2] <= srsi_value_e) and srsi_k[1] < srsi_k[2]
             srsi_d_rising = srsi_d[-1] < srsi_k[-1] and (srsi_value_s <= srsi_d[-1] <= srsi_value_e) #and (srsi_d[-2] > srsi_k[-2] or srsi_d[-3] > srsi_k[-3])
             
             # srsi_diff = abs(srsi_k - srsi_d)
             # srsi_increasing = srsi_diff[1] <= srsi_diff[2] 
             # srsi_diff = abs((srsi_k[-3] - srsi_d[-3])) <= abs((srsi_k[-2] - srsi_d[-2])) <= abs((srsi_k[-1] - srsi_d[-1]))
-            
-            
+                        
             # cur_price = pyupbit.get_current_price(t)
             # test_time = datetime.now().strftime('%m/%d %H:%M:%S')
             
             filtering_message = f"<<{t}>>\n"
             filtering_message += f"[cond1: {is_increasing}] band_diff15: {is_increasing_15} / {band_diff15[-1]:,.3f} > {band_diff_15_margin} / band_diff: {is_increasing_5} {band_diff[-1]:,.3f} > {band_diff_margin} \n"
-            filtering_message += f"[cond2: {low_boliinger}] LBoliinger: {low_boliinger} / LB * 0.5%: {lower_band[-1] * 1.005:,.2f} > df_close: {df_close[-1]:,.2f} \n"
-            filtering_message += f"[cond3: {srsi_d_rising}] srsi_d: {srsi_d_rising} / {srsi_value_s} < srsi_d: {srsi_d[-2]:,.2f} >> {srsi_d[-1]:,.2f} < {srsi_value_e} / srsi_k: {srsi_k[-2]:,.2f} >> {srsi_k[-1]:,.2f} \n"
-            # filtering_message += f"[cond4: {srsi_d_15_buy}] srsi_d_15: {srsi_d_15[-3]:,.2f} >> {srsi_d_15[-2]:,.2f} >> {srsi_d_15[-1]:,.2f}  < {srsi_value15_e} / srsi_k_15: {srsi_k_15[-3]:,.2f} >> {srsi_k_15[-2]:,.2f} >> {srsi_k_15[-1]:,.2f} \n"
-            # filtering_message += f"[cond4: {srsi_increasing}] srsi_diff: abs({srsi_k[-3]:,.3f} - {srsi_d[-3]:,.3f}) >> abs({srsi_k[-2]:,.3f} - {srsi_d[-2]:,.3f}) >> abs({srsi_k[-1]:,.3f} - {srsi_d[-1]:,.3f}) \n"
+            filtering_message += f"[cond2: {low_boliinger}] LowBoliinger: {low_boliinger} / LB * 0.5%: {lower_band[-1] * 1.005:,.3f} > df_close: {df_close[-1]:,.3f} \n"
+            filtering_message += f"[cond3: {srsi_d_rising}] srsi_d: {srsi_d_rising} / {srsi_value_s} < srsi_d: {srsi_d[-2]:,.3f} >> {srsi_d[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_k[-2]:,.3f} >> {srsi_k[-1]:,.3f} \n"
             filtering_message += f"[test4: {low_band_slope_decreasing}] LBandSslopes: {low_band_slope_decreasing} / {slopes_2:,.3f} >> {slopes_1:,.3f} \n"
+            
             filtering_message4 = f"[cond4: {low_band_slope_decreasing}] LBandSslopes: {low_band_slope_decreasing} / {slopes_2:,.3f} >> {slopes_1:,.3f} \n"
-            # filtering_message += f"[cond5:] srsi_increasing: {srsi_increasing} / {srsi_diff[1]:,.2f} >> {srsi_diff[2]:,.2f}\n"
-            # filtering_message += f"[test5: {srsi_increasing}] srsi_diff: {srsi_diff[0]:,.3f} >> {srsi_diff[1]:,.3f} >> {srsi_diff[2]:,.3f} \n"
-            # filtering_message5 = f"[cond5: {srsi_increasing}] srsi_diff: {srsi_diff[0]:,.3f} >> {srsi_diff[1]:,.3f} >> {srsi_diff[2]:,.3f} \n"
 
             # print(filtering_message)
             if is_increasing_15 :
@@ -209,7 +197,7 @@ def filtered_tickers(tickers):
                             # print(filtering_message)
                                 # if srsi_increasing :
                                     print(filtering_message4)
-                                    send_discord_message(filtering_message4)
+                                    send_discord_message(filtering_message)
                                     filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
@@ -390,7 +378,7 @@ def trade_sell(ticker):
                 send_discord_message(f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                 return sell_order   
             else:
-                print(f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                # print(f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                 send_discord_message(f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                 return None
         else:
@@ -433,26 +421,21 @@ def send_profit_report():
                             srsi_k = stoch_Rsi['%K'].values
                             srsi_d = stoch_Rsi['%D'].values
 
-                            stoch_Rsi_15 = stoch_rsi(f"KRW-{ticker}", interval=min15)
-                            srsi_k15 = stoch_Rsi_15['%K'].values
-                            srsi_d15 = stoch_Rsi_15['%D'].values
-
                             report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {buyed_amount:.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
 
-                            if len(srsi_d) > 2 and len(srsi_k) > 2 and len(srsi_d15) > 2 and len(srsi_k15) > 2:
-                                report_message += f"srsi_d15: {srsi_d15[1]:,.2f} -> {srsi_d15[2]:,.2f} / srsi_k15: {srsi_k15[1]:,.2f} -> {srsi_k15[2]:,.2f} \n"
-                                report_message += f"srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} / srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f} \n \n"
+                            if len(srsi_d) > 2 and len(srsi_k) > 2 :
+                                report_message += f"srsi_d: {srsi_d[1]:,.3f} -> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} -> {srsi_k[2]:,.3f} \n \n"
                     
                             else:
                                 report_message += "RSI 데이터가 충분하지 않습니다.\n"
+                # 보고서 전송
+                send_discord_message(report_message)
 
-                # 처음 실행 시 보고서 전송
+                # 첫 실행 이후 대기
                 if first_run:
-                    send_discord_message(report_message)
                     first_run = False  # 첫 실행 후 변경
                 else:
                     time.sleep(time_until_next_hour)  # 다음 정시까지 대기
-                    send_discord_message(report_message)
 
             else:
                 print("balances는 리스트가 아닙니다.")
@@ -490,8 +473,8 @@ def buying_logic():
     while True:
         try:
             stopbuy_time = datetime.now()
-            restricted_start = stopbuy_time.replace(hour=8, minute=0, second=0, microsecond=0)     # 08:00  #vC2
-            restricted_end = stopbuy_time.replace(hour=9, minute=30, second=0, microsecond=0)      # 10:00   #vC2
+            restricted_start = stopbuy_time.replace(hour=8, minute=50, second=0, microsecond=0)
+            restricted_end = stopbuy_time.replace(hour=9, minute=10, second=0, microsecond=0)
             
             if restricted_start <= stopbuy_time <= restricted_end:  # 매수 제한 시간 체크
                 time.sleep(60) 
