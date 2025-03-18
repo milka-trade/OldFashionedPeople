@@ -207,7 +207,7 @@ def filtered_tickers(tickers):
     return filtered_tickers
 
 def get_best_ticker():
-    selected_tickers = ["KRW-ETH", "KRW-XRP", "KRW-SOL", "KRW-ADA", "KRW-HBAR", "KRW-XLM", "KRW-DOGE"]
+    selected_tickers = ["KRW-XRP", "KRW-ADA", "KRW-HBAR", "KRW-XLM", "KRW-DOGE"]  #"KRW-ETH",  "KRW-SOL",  
     balances = upbit.get_balances()
     held_coins = []
 
