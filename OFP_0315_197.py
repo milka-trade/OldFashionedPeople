@@ -156,18 +156,18 @@ def filtered_tickers(tickers):
             is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
             is_increasing = is_increasing_15 and is_increasing_5
-            count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < lower_band15[i] * 1.005)
+            count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < lower_band15[i])
             low_boliinger = count_below_lower_band >= 1
             
             slopes = np.diff(lower_band)
             slopes_2 = (abs(slopes[-2]) / lower_band[-3]) * 100
             slopes_1 = (abs(slopes[-1]) / lower_band[-2]) * 100
-            low_band_slope_decreasing = slopes_2 > slopes_1
+            low_band_slope_decreasing = slopes_2 * 0.8 > slopes_1
 
             stoch_Rsi = stoch_rsi(t, interval = min5)
             srsi_k = stoch_Rsi['%K'].values
             srsi_d = stoch_Rsi['%D'].values
-            srsi_d_rising = srsi_d[-1] < srsi_k[-1] and (srsi_value_s <= srsi_d[-1] <= srsi_value_e) #and (srsi_d[-2] > srsi_k[-2] or srsi_d[-3] > srsi_k[-3])
+            srsi_d_rising = srsi_d[-1] < srsi_k[-1] and (srsi_value_s <= srsi_d[-1] <= srsi_value_e) and (srsi_k[-2] <= srsi_k[-1])
             
             # srsi_diff = abs(srsi_k - srsi_d)
             # srsi_increasing = srsi_diff[1] <= srsi_diff[2] 
@@ -186,7 +186,7 @@ def filtered_tickers(tickers):
 
             # print(filtering_message)
             if is_increasing_15 :
-                print(filtering_message)
+                # print(filtering_message)
                 if is_increasing_5 :
                     # print(filtering_message)
                     if low_boliinger :
@@ -337,7 +337,7 @@ def trade_sell(ticker):
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     
-    upper_price = (upper_boliinger and srsi_d[2] >= 0.9) or (srsi_d[2] >= 0.99) or (srsi_d[2] >= 0.75 and srsi_d[2] > srsi_k[2])
+    upper_price = (upper_boliinger and srsi_d[2] >= 0.95) or (srsi_d[2] >= 0.99) or (srsi_d[2] >= 0.75 and srsi_d[2] > srsi_k[2])
     middle_price = srsi_d[2] >= 0.5 and srsi_d[2] > srsi_k[2]
     cut_price = middle_price or srsi_d[2] >= 0.99
 
@@ -364,8 +364,8 @@ def trade_sell(ticker):
 
                 if profit_rate >= max_rate or upper_price :
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                    print(f"[!!목표가 달성!!]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
-                    send_discord_message(f"[!!목표가 달성!!]: [{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_price: {upper_price} / 0.85 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                    print(f"[!!목표가 달성!!]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_Bol: {upper_boliinger} / 0.95 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                    send_discord_message(f"[!!목표가 달성!!]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} upper_Bol: {upper_boliinger} / 0.95 < srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                     return sell_order
 
                 else:
@@ -474,7 +474,7 @@ def buying_logic():
         try:
             stopbuy_time = datetime.now()
             restricted_start = stopbuy_time.replace(hour=8, minute=50, second=0, microsecond=0)
-            restricted_end = stopbuy_time.replace(hour=9, minute=10, second=0, microsecond=0)
+            restricted_end = stopbuy_time.replace(hour=9, minute=30, second=0, microsecond=0)
             
             if restricted_start <= stopbuy_time <= restricted_end:  # 매수 제한 시간 체크
                 time.sleep(60) 
