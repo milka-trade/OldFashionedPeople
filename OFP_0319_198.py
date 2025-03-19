@@ -221,19 +221,19 @@ def filtered_tickers(tickers):
 
             # print(filtering_message)
             if is_increasing_15 :
-                print(filtering_message)
+                # print(filtering_message)
                 if is_increasing_5 :
                     # print(filtering_message)
                     if low_boliinger :
-                        # print(filtering_message)
+                        print(filtering_message)
                         if srsi_d_risingS :
                             # print(filtering_message)
                             if low_band_slope_decreasing :
-                            # print(filtering_message)
+                                # print(filtering_message)
                                 # if srsi_increasing :
-                                    print(filtering_message4)
-                                    send_discord_message(filtering_message)
-                                    filtered_tickers.append(t)
+                                print(filtering_message4)
+                                send_discord_message(filtering_message)
+                                filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
             send_discord_message(f"filtered_tickers/Error processing ticker {t}: {e}")
