@@ -107,7 +107,7 @@ def stoch_rsi(ticker, interval = min5):
         
     return result_df.tail(3)
 
-def stoch_rsi7(ticker, interval = min5, window = 7):
+def stoch_rsiS(ticker, interval = min5, window = 7):
     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
     time.sleep(second)
      
@@ -199,7 +199,7 @@ def filtered_tickers(tickers):
             # srsi_d = stoch_Rsi['%D'].values
             # srsi_d_rising = srsi_d[-1] < srsi_k[-1] and (srsi_value_s <= srsi_d[-1] <= srsi_value_e) and (srsi_k[-2] <= srsi_k[-1])
             
-            stoch_RsiS = stoch_rsi7(t, interval = min5, window=12)
+            stoch_RsiS = stoch_rsiS(t, interval = min5, window=10)
             srsi_kS = stoch_RsiS['%K'].values
             srsi_dS = stoch_RsiS['%D'].values
             srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
@@ -212,12 +212,12 @@ def filtered_tickers(tickers):
             # test_time = datetime.now().strftime('%m/%d %H:%M:%S')
             
             filtering_message = f"<<{t}>>\n"
-            filtering_message += f"[cond1: {is_increasing}] band_diff15: {is_increasing_15} / {band_diff15[-1]:,.3f} > {band_diff_15_margin} / band_diff: {is_increasing_5} {band_diff[-1]:,.3f} > {band_diff_margin} \n"
+            filtering_message += f"[cond1: {is_increasing}] band_diff15: {is_increasing_15} / {band_diff_15_margin} < {band_diff15[-1]:,.3f} / band_diff: {is_increasing_5}  {band_diff_margin} < {band_diff[-1]:,.3f}\n"
             filtering_message += f"[cond2: {low_boliinger}] LowBoliinger: {low_boliinger} / LB * 0.5%: {lower_band[-1] * 1.005:,.3f} > df_close: {df_close[-1]:,.3f} \n"
             filtering_message += f"[cond3: {srsi_d_risingS}] srsi_d: {srsi_d_risingS} / {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
-            filtering_message += f"[test4: {low_band_slope_decreasing}] LBandSslopes: {low_band_slope_decreasing} / {slopes_2:,.3f} >> {slopes_1:,.3f} \n"
+            filtering_message += f"[test4: {low_band_slope_decreasing}] LBandSslopes: {low_band_slope_decreasing} / {slopes_2 * 0.9:,.3f} >> {slopes_1:,.3f} \n"
             
-            filtering_message4 = f"[cond4: {low_band_slope_decreasing}] LBandSslopes: {low_band_slope_decreasing} / {slopes_2:,.3f} >> {slopes_1:,.3f} \n"
+            filtering_message4 = f"[cond4: {low_band_slope_decreasing}] LBandSslopes: {low_band_slope_decreasing} / {slopes_2 * 0.9:,.3f} >> {slopes_1:,.3f} \n"
 
             # print(filtering_message)
             if is_increasing_15 :
@@ -296,8 +296,8 @@ def get_best_ticker():
     for ticker in filtered_list:   # 조회할 코인 필터링
         # stoch_Rsi = stoch_rsi(ticker, interval = min5)
         # srsi_d = stoch_Rsi['%D'].values
-        stoch_Rsi7 = stoch_rsi7(ticker, interval = min5)
-        srsi_d = stoch_Rsi7['%D'].values
+        stoch_RsiS = stoch_rsiS(ticker, window = 10, interval = min5)
+        srsi_d = stoch_RsiS['%D'].values
 
         # srsi 'D' 값이 존재하는지 체크
         if len(srsi_d) == 0:
@@ -322,7 +322,7 @@ def trade_buy(ticker):
     attempt = 0 
        
     # stoch_Rsi = stoch_rsi(ticker, interval = min5)
-    stoch_Rsi = stoch_rsi7(ticker, interval = min5)
+    stoch_Rsi = stoch_rsiS(ticker, window = 10, interval = min5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     srsi_buy = srsi_d[2] < srsi_k[2] and (srsi_value_s <= srsi_d[2] <= srsi_value_e) and srsi_k[1] < srsi_k[2]
@@ -371,7 +371,7 @@ def trade_sell(ticker):
     count_upper_band = sum(1 for i in range(len(up_Bol)) if up_Bol[i] < df_close[i] )
     upper_boliinger = count_upper_band >= 1
 
-    stoch_Rsi = stoch_rsi7(ticker, interval = min5, window = 15)
+    stoch_Rsi = stoch_rsiS(ticker, interval = min5, window = 15)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     
@@ -459,20 +459,20 @@ def send_profit_report():
                             srsi_k = stoch_Rsi['%K'].values
                             srsi_d = stoch_Rsi['%D'].values
 
-                            stoch_Rsi12 = stoch_rsi7(f"KRW-{ticker}", interval=min5, window = 12)
-                            srsi_k12 = stoch_Rsi12['%K'].values
-                            srsi_d12 = stoch_Rsi12['%D'].values
+                            stoch_Rsi10 = stoch_rsiS(f"KRW-{ticker}", interval=min5, window = 10)
+                            srsi_k1 = stoch_Rsi10['%K'].values
+                            srsi_d1 = stoch_Rsi10['%D'].values
 
-                            stoch_Rsi15 = stoch_rsi7(f"KRW-{ticker}", interval=min5, window = 15)
-                            srsi_k15 = stoch_Rsi15['%K'].values
-                            srsi_d15 = stoch_Rsi15['%D'].values
+                            stoch_Rsi15 = stoch_rsiS(f"KRW-{ticker}", interval=min5, window = 15)
+                            srsi_k2 = stoch_Rsi15['%K'].values
+                            srsi_d2 = stoch_Rsi15['%D'].values
 
                             report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {buyed_amount:.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
 
                             if len(srsi_d) > 2 and len(srsi_k) > 2 :
                                 report_message += f"srsi_d: {srsi_d[1]:,.3f} -> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} -> {srsi_k[2]:,.3f} \n"
-                                report_message += f"srsi_d12: {srsi_d12[1]:,.3f} -> {srsi_d12[2]:,.3f} / srsi_k12: {srsi_k12[1]:,.3f} -> {srsi_k12[2]:,.3f} \n"
-                                report_message += f"srsi_d15: {srsi_d15[1]:,.3f} -> {srsi_d15[2]:,.3f} / srsi_k15: {srsi_k15[1]:,.3f} -> {srsi_k15[2]:,.3f} \n \n"
+                                report_message += f"srsi_d10: {srsi_d1[1]:,.3f} -> {srsi_d1[2]:,.3f} / srsi_k10: {srsi_k1[1]:,.3f} -> {srsi_k1[2]:,.3f} \n"
+                                report_message += f"srsi_d15: {srsi_d2[1]:,.3f} -> {srsi_d2[2]:,.3f} / srsi_k15: {srsi_k2[1]:,.3f} -> {srsi_k1[2]:,.3f} \n \n"
                     
                             else:
                                 report_message += "RSI 데이터가 충분하지 않습니다.\n"
