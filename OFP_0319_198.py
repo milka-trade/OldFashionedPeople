@@ -107,13 +107,13 @@ def stoch_rsi(ticker, interval = min5):
         
     return result_df.tail(3)
 
-def stoch_rsi7(ticker, interval = min5):
+def stoch_rsi7(ticker, interval = min5, window = 7):
     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
     time.sleep(second)
      
     rsi = ta.momentum.RSIIndicator(df['close'], window=7).rsi()
-    min_rsi = rsi.rolling(window=7).min()
-    max_rsi = rsi.rolling(window=7).max()
+    min_rsi = rsi.rolling(window = window).min()
+    max_rsi = rsi.rolling(window = window).max()
         
     rsi = rsi.bfill()  # 이후 값으로 NaN 대체
     min_rsi = min_rsi.bfill()
@@ -186,7 +186,7 @@ def filtered_tickers(tickers):
             is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
             is_increasing = is_increasing_15 and is_increasing_5
-            count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < lower_band15[i])
+            count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < lower_band15[i] * 1.005)
             low_boliinger = count_below_lower_band >= 1
             
             slopes = np.diff(lower_band)
@@ -199,10 +199,10 @@ def filtered_tickers(tickers):
             # srsi_d = stoch_Rsi['%D'].values
             # srsi_d_rising = srsi_d[-1] < srsi_k[-1] and (srsi_value_s <= srsi_d[-1] <= srsi_value_e) and (srsi_k[-2] <= srsi_k[-1])
             
-            stoch_Rsi7 = stoch_rsi7(t, interval = min5)
-            srsi_k7 = stoch_Rsi7['%K'].values
-            srsi_d7 = stoch_Rsi7['%D'].values
-            srsi_d_rising7 = srsi_d7[-1] < srsi_k7[-1] and (srsi_value_s <= srsi_d7[-1] <= srsi_value_e) and (srsi_k7[-2] <= srsi_k7[-1])
+            stoch_RsiS = stoch_rsi7(t, interval = min5, window=12)
+            srsi_kS = stoch_RsiS['%K'].values
+            srsi_dS = stoch_RsiS['%D'].values
+            srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
             
             # srsi_diff = abs(srsi_k - srsi_d)
             # srsi_increasing = srsi_diff[1] <= srsi_diff[2] 
@@ -214,19 +214,19 @@ def filtered_tickers(tickers):
             filtering_message = f"<<{t}>>\n"
             filtering_message += f"[cond1: {is_increasing}] band_diff15: {is_increasing_15} / {band_diff15[-1]:,.3f} > {band_diff_15_margin} / band_diff: {is_increasing_5} {band_diff[-1]:,.3f} > {band_diff_margin} \n"
             filtering_message += f"[cond2: {low_boliinger}] LowBoliinger: {low_boliinger} / LB * 0.5%: {lower_band[-1] * 1.005:,.3f} > df_close: {df_close[-1]:,.3f} \n"
-            filtering_message += f"[cond3: {srsi_d_rising7}] srsi_d7: {srsi_d_rising7} / {srsi_value_s} < srsi_d7: {srsi_d7[-2]:,.3f} >> {srsi_d7[-1]:,.3f} < {srsi_value_e} / srsi_k7: {srsi_k7[-2]:,.3f} >> {srsi_k7[-1]:,.3f} \n"
+            filtering_message += f"[cond3: {srsi_d_risingS}] srsi_d: {srsi_d_risingS} / {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
             filtering_message += f"[test4: {low_band_slope_decreasing}] LBandSslopes: {low_band_slope_decreasing} / {slopes_2:,.3f} >> {slopes_1:,.3f} \n"
             
             filtering_message4 = f"[cond4: {low_band_slope_decreasing}] LBandSslopes: {low_band_slope_decreasing} / {slopes_2:,.3f} >> {slopes_1:,.3f} \n"
 
             # print(filtering_message)
             if is_increasing_15 :
-                # print(filtering_message)
+                print(filtering_message)
                 if is_increasing_5 :
                     # print(filtering_message)
                     if low_boliinger :
                         # print(filtering_message)
-                        if srsi_d_rising7 :
+                        if srsi_d_risingS :
                             # print(filtering_message)
                             if low_band_slope_decreasing :
                             # print(filtering_message)
@@ -371,13 +371,13 @@ def trade_sell(ticker):
     count_upper_band = sum(1 for i in range(len(up_Bol)) if up_Bol[i] < df_close[i] )
     upper_boliinger = count_upper_band >= 1
 
-    stoch_Rsi = stoch_rsi(ticker, interval = min5)
+    stoch_Rsi = stoch_rsi7(ticker, interval = min5, window = 15)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     
-    upper_price = (upper_boliinger and srsi_d[2] >= 0.99) or (0.75 < srsi_d[2] <= 0.85 and srsi_d[2] > srsi_k[2])
+    upper_price = (upper_boliinger and srsi_d[2] >= 0.95) or (0.75 < srsi_d[2] <= 0.85 and srsi_d[2] > srsi_k[2])
     middle_price = 0.5 <= srsi_d[2] <= 0.75 and srsi_d[2] > srsi_k[2]
-    cut_price = middle_price or srsi_d[2] >= 0.99
+    cut_price = middle_price or srsi_d[2] >= 0.95
 
     max_attempts = sell_time
     attempts = 0
@@ -459,10 +459,20 @@ def send_profit_report():
                             srsi_k = stoch_Rsi['%K'].values
                             srsi_d = stoch_Rsi['%D'].values
 
+                            stoch_Rsi12 = stoch_rsi7(f"KRW-{ticker}", interval=min5, window = 12)
+                            srsi_k12 = stoch_Rsi12['%K'].values
+                            srsi_d12 = stoch_Rsi12['%D'].values
+
+                            stoch_Rsi15 = stoch_rsi7(f"KRW-{ticker}", interval=min5, window = 15)
+                            srsi_k15 = stoch_Rsi15['%K'].values
+                            srsi_d15 = stoch_Rsi15['%D'].values
+
                             report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {buyed_amount:.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
 
                             if len(srsi_d) > 2 and len(srsi_k) > 2 :
-                                report_message += f"srsi_d: {srsi_d[1]:,.3f} -> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} -> {srsi_k[2]:,.3f} \n \n"
+                                report_message += f"srsi_d: {srsi_d[1]:,.3f} -> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} -> {srsi_k[2]:,.3f} \n"
+                                report_message += f"srsi_d12: {srsi_d12[1]:,.3f} -> {srsi_d12[2]:,.3f} / srsi_k12: {srsi_k12[1]:,.3f} -> {srsi_k12[2]:,.3f} \n"
+                                report_message += f"srsi_d15: {srsi_d15[1]:,.3f} -> {srsi_d15[2]:,.3f} / srsi_k15: {srsi_k15[1]:,.3f} -> {srsi_k15[2]:,.3f} \n \n"
                     
                             else:
                                 report_message += "RSI 데이터가 충분하지 않습니다.\n"
