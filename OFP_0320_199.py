@@ -386,7 +386,7 @@ def trade_sell(ticker):
     srsi_d = stoch_Rsi['%D'].values
     
     upper_price = (upper_boliinger and srsi_d[2] > 0.95)
-    middle_price = 0.5 <= srsi_k[2] <= 0.8 and srsi_d[2] > srsi_k[2]
+    middle_price = (0.5 <= srsi_k[2] <= 0.8) and srsi_k[1] > srsi_k[2]
     cut_price = middle_price or srsi_d[2] > 0.95
 
     max_attempts = sell_time
