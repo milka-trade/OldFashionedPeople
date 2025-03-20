@@ -45,7 +45,7 @@ def get_user_input():
     return min_rate, max_rate, sell_time #, srsi_value_s, srsi_value_e
 
 # 함수 호출 및 결과 저장
-min_rate, max_rate, sell_time, srsi_value_s, srsi_value_e = get_user_input()
+min_rate, max_rate, sell_time = get_user_input()  #, srsi_value_s, srsi_value_e
 
 second = 1.0
 min_krw = 50_000
