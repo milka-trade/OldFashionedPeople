@@ -34,7 +34,7 @@ def get_user_input():
     while True:
         try:
             min_rate = float(input("최소 수익률 (예: 0.35): "))
-            max_rate = float(input("최대 수익률 (예: 1.1): "))
+            max_rate = float(input("최대 수익률 (예: 0.85): "))
             # srsi_value_s = float(input("srsi D 매수 시작 (예: 0.05): "))
             # srsi_value_e = float(input("srsi D 매수 제한 (예: 0.4): "))
             sell_time = int(input("매도감시횟수 (예: 15): "))
@@ -49,7 +49,7 @@ min_rate, max_rate, sell_time = get_user_input()  #, srsi_value_s, srsi_value_e
 
 second = 1.0
 min_krw = 50_000
-cut_rate = -2.0
+cut_rate = -3.0
 
 def get_balance(ticker):
     try:
@@ -77,36 +77,6 @@ def get_ema(ticker, interval = min5):
     else:
         return 0  # 데이터가 없으면 0 반환
     
-# def stoch_rsi(ticker, interval = min5):
-#     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
-#     time.sleep(second)
-     
-#     rsi = ta.momentum.RSIIndicator(df['close'], window=14).rsi()
-#     min_rsi = rsi.rolling(window=14).min()
-#     max_rsi = rsi.rolling(window=14).max()
-        
-#     rsi = rsi.bfill()  # 이후 값으로 NaN 대체
-#     min_rsi = min_rsi.bfill()
-#     max_rsi = max_rsi.bfill()
-        
-#     stoch_rsi = (rsi - min_rsi) / (max_rsi - min_rsi)
-#     stoch_rsi = stoch_rsi.replace([np.inf, -np.inf], np.nan)  # 무한대를 np.nan으로 대체
-#     stoch_rsi = stoch_rsi.fillna(0)  # NaN을 0으로 대체 (필요 시)
-
-#     k_period = 3  # %K 기간
-#     d_period = 3  # %D 기간
-        
-#     stoch_rsi_k = stoch_rsi.rolling(window=k_period).mean()
-#     stoch_rsi_d = stoch_rsi_k.rolling(window=d_period).mean()
-
-#     result_df = pd.DataFrame({  # 결과를 DataFrame으로 묶어서 반환
-#             'StochRSI': stoch_rsi,
-#             '%K': stoch_rsi_k,
-#             '%D': stoch_rsi_d
-#         })
-        
-#     return result_df.tail(3)
-
 def stoch_rsiS(ticker, interval = min5, window=7):
     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
     time.sleep(second)
@@ -199,28 +169,16 @@ def filtered_tickers(tickers):
             count_below_lower_band15 = sum(1 for i in range(len(lower_band15)) if df15_close[i] < lower_band15[i] * 1.001)
             low_boliinger = count_below_lower_band >= 1 and count_below_lower_band15 >= 1
             
-            slopes = np.diff(lower_band)
+            slopes = np.diff(lower_band15)
             slopes_2 = (abs(slopes[-2]) / lower_band[-3]) * 100
             slopes_1 = (abs(slopes[-1]) / lower_band[-2]) * 100
             low_band_slope_decreasing = slopes_2 * 0.95 > slopes_1
 
-            # stoch_Rsi = stoch_rsi(t, interval = min5)
-            # srsi_k = stoch_Rsi['%K'].values
-            # srsi_d = stoch_Rsi['%D'].values
-            # srsi_d_rising = srsi_d[-1] < srsi_k[-1] and (srsi_value_s <= srsi_d[-1] <= srsi_value_e) and (srsi_k[-2] <= srsi_k[-1])
-            
             stoch_RsiS = stoch_rsiS(t, interval = min5, window=10)
             srsi_kS = stoch_RsiS['%K'].values
             srsi_dS = stoch_RsiS['%D'].values
             srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
-            
-            # srsi_diff = abs(srsi_k - srsi_d)
-            # srsi_increasing = srsi_diff[1] <= srsi_diff[2] 
-            # srsi_diff = abs((srsi_k[-3] - srsi_d[-3])) <= abs((srsi_k[-2] - srsi_d[-2])) <= abs((srsi_k[-1] - srsi_d[-1]))
-                        
-            # cur_price = pyupbit.get_current_price(t)
-            # test_time = datetime.now().strftime('%m/%d %H:%M:%S')
-            
+                       
             filtering_message = f"<<{t}>>\n"
             filtering_message += f"[cond1: {is_increasing}] band_diff15: {is_increasing_15} / {band_diff_15_margin} < {band_diff15[-1]:,.3f} / band_diff: {is_increasing_5}  {band_diff_margin} < {band_diff[-1]:,.3f}\n"
             filtering_message += f"[cond2: {low_boliinger}] LowBoliinger: {low_boliinger} / LB * 0.1%: {lower_band[-1] * 1.001:,.3f} > df_close: {df_close[-1]:,.3f} / LB15 * 0.1%: {lower_band15[-1] * 1.001:,.3f} > df15_close: {df15_close[-1]:,.3f}\n"
@@ -235,14 +193,15 @@ def filtered_tickers(tickers):
                 if is_increasing_5 :
                     # print(filtering_message)
                     if low_boliinger :
-                        print(filtering_message)
+                        # print(filtering_message)
                         if srsi_d_risingS :
-                            # print(filtering_message)
+                            print(filtering_message)
+                            send_discord_message(filtering_message)
                             if low_band_slope_decreasing :
                                 # print(filtering_message)
                                 # if srsi_increasing :
                                 print(filtering_message4)
-                                send_discord_message(filtering_message)
+                                send_discord_message(filtering_message4)
                                 filtered_tickers.append(t)
                 
         except (KeyError, ValueError) as e:
@@ -252,7 +211,7 @@ def filtered_tickers(tickers):
     return filtered_tickers
 
 def get_best_ticker():
-    selected_tickers = ["KRW-XRP", "KRW-ADA", "KRW-HBAR", "KRW-XLM", "KRW-DOGE"]  #"KRW-ETH",  "KRW-SOL",  
+    selected_tickers = ["KRW-XRP", "KRW-ADA", "KRW-XLM", "KRW-DOGE"]  #"KRW-ETH",  "KRW-SOL",   "KRW-HBAR", 
     balances = upbit.get_balances()
     held_coins = []
 
@@ -281,8 +240,6 @@ def get_best_ticker():
                 candle_cond0 = df_high_0 < df_open_0 * 1.02
                 candle_cond1 = df_high_1 < df_open_1 * 1.02
                 candle_cond2 = df_high_2 < df_open_2 * 1.02
-
-                # cur_price = pyupbit.get_current_price(ticker)
 
                 if candle_cond0 and candle_cond1 and candle_cond2 :
                     filtering_tickers.append(ticker)
