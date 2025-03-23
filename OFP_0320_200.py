@@ -160,7 +160,7 @@ def filtered_tickers(tickers):
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
             # band_diff_margin = 0.01
-            band_diff_15_margin = 0.005
+            band_diff_15_margin = min_rate * 0.02
 
             # is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
