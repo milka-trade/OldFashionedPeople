@@ -557,7 +557,7 @@ def buying_logic():
         try:
             stopbuy_time = datetime.now()
             restricted_start = stopbuy_time.replace(hour=8, minute=50, second=0, microsecond=0)
-            restricted_end = stopbuy_time.replace(hour=9, minute=30, second=0, microsecond=0)
+            restricted_end = stopbuy_time.replace(hour=9, minute=10, second=0, microsecond=0)
             
             if restricted_start <= stopbuy_time <= restricted_end:  # 매수 제한 시간 체크
                 time.sleep(60) 
