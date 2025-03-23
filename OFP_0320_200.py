@@ -145,7 +145,9 @@ def filtered_tickers(tickers):
                 send_discord_message(f"[filter_tickers] 데이터를 가져올 수 없습니다: {t}")
                 continue  # 다음 티커로 넘어감
             time.sleep(second)
+            df15_open = df15['open'].values
             df15_close = df15['close'].values
+            
 
             bands_df = get_bollinger_bands(t, interval = min5)
             upper_band = bands_df['Upper_Band'].values
@@ -157,8 +159,8 @@ def filtered_tickers(tickers):
             lower_band15 = bands_df15['Lower_Band'].values
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
-            band_diff_margin = 0.015
-            band_diff_15_margin = 0.015
+            band_diff_margin = 0.01
+            band_diff_15_margin = 0.01
 
             is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
@@ -166,8 +168,8 @@ def filtered_tickers(tickers):
             last_ema5 = get_ema(t, interval = min5).iloc[-1]
             last_ema15 = get_ema(t, interval = min15).iloc[-1]
 
-            bolRate = 1.001
-            bolRate15 = 1.003
+            bolRate = 1
+            bolRate15 = 1
             count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < min(lower_band[i] * bolRate, last_ema5))
             count_below_lower_band15 = sum(1 for i in range(len(lower_band15)) if df15_close[i] < min(lower_band15[i] * bolRate15, last_ema15))
             
@@ -177,12 +179,20 @@ def filtered_tickers(tickers):
             slopes = np.diff(lower_band15)
             slopes_2 = (abs(slopes[-2]) / lower_band[-3]) * 100
             slopes_1 = (abs(slopes[-1]) / lower_band[-2]) * 100
-            low_band_slope_decreasing = slopes_2 * 0.95 > slopes_1
+            slopeRate = 0.9
+            low_band_slope_decreasing = slopes_2 * slopeRate > slopes_1
 
             stoch_RsiS = stoch_rsiS(t, interval = min5, window=10)
             srsi_kS = stoch_RsiS['%K'].values
             srsi_dS = stoch_RsiS['%D'].values
             srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
+
+            red_candle = df15_open[-1] < df15_close[-1]
+
+            stoch_RsiS15 = stoch_rsiS(t, interval = min15, window=7)
+            srsi_kS15 = stoch_RsiS15['%K'].values
+            srsi_dS15 = stoch_RsiS15['%D'].values
+            srsi_d_risingS15 = srsi_kS15[-2] < srsi_kS15[-1]   #srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (
 
             filteringTime = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
@@ -192,44 +202,58 @@ def filtered_tickers(tickers):
             filtering_message += f"[cond2: {is_increasing_5}] band_diff: {band_diff[-1]:,.3f} > {band_diff_margin} \n"
             filtering_message2 = f"{t} / [cond2: {is_increasing_5}] band_diff: {band_diff[-1]:,.3f} > {band_diff_margin} \n"
             
-            filtering_message += f"[cond3: {low_boliinger15}] LowBoliinger15: {low_boliinger15} LB15 * {bolRate15}%: {lower_band15[-1] * bolRate15:,.3f} or ema15: {last_ema15:,.3f} > df15_close: {df15_close[-1]:,.3f} \n"
-            filtering_message3 = f"[{t} / cond3: {low_boliinger15}] LowBoliinger15: {low_boliinger15} LB15 * {bolRate15}%: {lower_band15[-1] * bolRate15:,.3f} or ema15: {last_ema15:,.3f} > df15_close: {df15_close[-1]:,.3f} \n"
+            filtering_message += f"[cond3: {low_boliinger15}] LB15 * {bolRate15}: {lower_band15[-1] * bolRate15:,.3f} or ema15: {last_ema15:,.3f} > df15_close: {df15_close[-1]:,.3f} \n"
+            filtering_message3 = f"{t} / [cond3: {low_boliinger15}] LB15 * {bolRate15}: {lower_band15[-1] * bolRate15:,.3f} or ema15: {last_ema15:,.3f} > df15_close: {df15_close[-1]:,.3f} \n"
             
-            filtering_message += f"[cond4: {low_boliinger}] LowBoliinger: {low_boliinger} / LB * {bolRate}%: {lower_band[-1] * bolRate:,.3f} or ema: {last_ema5:,.3f} > df_close: {df_close[-1]:,.3f} \n"
-            filtering_message4 = f"[{t} / cond4: {low_boliinger}] LowBoliinger: {low_boliinger} / LB * {bolRate}%: {lower_band[-1] * bolRate:,.3f} or ema: {last_ema5:,.3f} > df_close: {df_close[-1]:,.3f} \n"
+            filtering_message += f"[cond4: {low_boliinger}] LB * {bolRate}%: {lower_band[-1] * bolRate:,.3f} or ema: {last_ema5:,.3f} > df_close: {df_close[-1]:,.3f} \n"
+            filtering_message4 = f"{t} / [cond4: {low_boliinger}] LB * {bolRate}%: {lower_band[-1] * bolRate:,.3f} or ema: {last_ema5:,.3f} > df_close: {df_close[-1]:,.3f} \n"
+
+            filtering_message += f"[cond5: {srsi_d_risingS15}] srsi_k15: {srsi_kS15[-2]:,.3f} >> {srsi_kS15[-1]:,.3f} / srsi_d15: {srsi_dS15[-2]:,.3f} >> {srsi_dS15[-1]:,.3f} \n"
+            filtering_message5 = f"{t} / [cond5: {srsi_d_risingS15}] srsi_k15: {srsi_kS15[-2]:,.3f} >> {srsi_kS15[-1]:,.3f} / srsi_d15: {srsi_dS15[-2]:,.3f} >> {srsi_dS15[-1]:,.3f} \n"
+
+            filtering_message += f"[cond6: {srsi_d_risingS}] {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
+            filtering_message6 = f"{t} / [cond6: {srsi_d_risingS}] {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
             
-            filtering_message += f"[cond5: {srsi_d_risingS}] srsi_d: {srsi_d_risingS} / {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
-            filtering_message5 = f"[{t} / cond5: {srsi_d_risingS}] srsi_d: {srsi_d_risingS} / {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
-            
-            filtering_message += f"[cond6: {low_band_slope_decreasing}] LBSlopes: {low_band_slope_decreasing} / {slopes_2 * 0.95:,.3f} >> {slopes_1:,.3f} \n \n"
-            filtering_message6 = f"[{t} / cond6: {low_band_slope_decreasing}] LBSlopes: {low_band_slope_decreasing} / {slopes_2 * 0.95:,.3f} >> {slopes_1:,.3f} \n \n"
+            filtering_message += f"[cond7: {low_band_slope_decreasing}] LBSlopes: {slopes_2 * slopeRate:,.3f} >> {slopes_1:,.3f} \n"
+            filtering_message7 = f"{t} / [cond7: {low_band_slope_decreasing}] LBSlopes: {slopes_2 * slopeRate:,.3f} >> {slopes_1:,.3f} \n"
+
+            filtering_message += f"[cond8: {red_candle}] df15_open: {df15_open[-1]:,.2f} < df15_close: {df15_close[-1]:,.2f} \n \n"
+            filtering_message8 = f"{t} / [cond8: {red_candle}] df15_open: {df15_open[-1]:,.2f} < df15_close: {df15_close[-1]:,.2f} \n \n"
 
             # print(filtering_message)
-            if is_increasing_15 :                                      #cond1
-                print(filtering_message1)
+            if is_increasing_15 :
+                # print(filtering_message1)
                 # send_discord_message(filtering_message1)
                 
-                if is_increasing_5 :                                   #cond2
-                    print(filtering_message2)
+                if is_increasing_5 :
+                    print(filtering_message)
                     # send_discord_message(filtering_message2)
                     
-                    if low_boliinger15 :                               #cond2
+                    if low_boliinger15 :
                         print(filtering_message3)
                         # send_discord_message(filtering_message3)
                         
-                        if low_boliinger :                             #cond4
+                        if low_boliinger :
                             print(filtering_message4)
-                            # send_discord_message(filtering_message4)
+                            send_discord_message(filtering_message)
             
-                            if srsi_d_risingS :                        #cond5
+                            if srsi_d_risingS15 :
                                 print(filtering_message5)
-                                send_discord_message(filtering_message)
-            
-                                if low_band_slope_decreasing :         #cond6
+                                # send_discord_message(filtering_message5)
+
+                                if srsi_d_risingS :
                                     print(filtering_message6)
-                                    send_discord_message(filtering_message6)
-                                    filtered_tickers.append(t)
-                
+                                    # send_discord_message(filtering_message6)
+
+                                    if low_band_slope_decreasing :             #cond7
+                                        print(filtering_message7)
+                                        # send_discord_message(filtering_message7)                                
+
+                                        if red_candle :                        #cond8
+                                            print(filtering_message8)
+                                            # send_discord_message(filtering_message8)
+                                            filtered_tickers.append(t)
+
         except (KeyError, ValueError) as e:
             send_discord_message(f"filtered_tickers/Error processing ticker {t}: {e}")
             time.sleep(5) 
@@ -504,7 +528,7 @@ def send_profit_report():
             
 trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
 trade_msg = f'{trade_start} trading start / \n'
-trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 / 손절: {cut_rate1}% ~ {cut_rate2}% \n \n'
+trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 / 손절: {cut_rate1}% ~ {cut_rate2}% / srsi: {srsi_value_s} ~ {srsi_value_e}\n \n'
 print(trade_msg)
 send_discord_message(trade_msg)
 
