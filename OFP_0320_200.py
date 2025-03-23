@@ -29,6 +29,7 @@ min15 = "minute15"
 min5 = "minute5"
 srsi_value_s = 0.1
 srsi_value_e = 0.4
+srsi15Rate = 0.5
 
 def get_user_input():
     while True:
@@ -191,7 +192,8 @@ def filtered_tickers(tickers):
             stoch_RsiS15 = stoch_rsiS(t, interval = min15, window=7)
             srsi_kS15 = stoch_RsiS15['%K'].values
             srsi_dS15 = stoch_RsiS15['%D'].values
-            srsi_d_risingS15 = srsi_kS15[-2] < srsi_kS15[-1]   #srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (
+            
+            srsi_d_risingS15 = srsi_kS15[-2] < srsi_kS15[-1] < srsi15Rate  #srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (
 
             filteringTime = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
@@ -207,8 +209,8 @@ def filtered_tickers(tickers):
             # filtering_message += f"[cond4: {low_boliinger}] LB * {bolRate}%: {lower_band[-1] * bolRate:,.3f} or ema: {last_ema5:,.3f} > df_close: {df_close[-1]:,.3f} \n"
             # filtering_message4 = f"{t} / [cond4: {low_boliinger}] LB * {bolRate}%: {lower_band[-1] * bolRate:,.3f} or ema: {last_ema5:,.3f} > df_close: {df_close[-1]:,.3f} \n"
 
-            filtering_message += f"[cond3: {srsi_d_risingS15}] srsi_k15: {srsi_kS15[-2]:,.3f} >> {srsi_kS15[-1]:,.3f} / srsi_d15: {srsi_dS15[-2]:,.3f} >> {srsi_dS15[-1]:,.3f} \n"
-            filtering_message3 = f"{t} / [cond3: {srsi_d_risingS15}] srsi_k15: {srsi_kS15[-2]:,.3f} >> {srsi_kS15[-1]:,.3f} / srsi_d15: {srsi_dS15[-2]:,.3f} >> {srsi_dS15[-1]:,.3f} \n"
+            filtering_message += f"[cond3: {srsi_d_risingS15}] srsi_k15: {srsi_kS15[-2]:,.3f} >> {srsi_kS15[-1]:,.3f} > {srsi15Rate} / srsi_d15: {srsi_dS15[-2]:,.3f} >> {srsi_dS15[-1]:,.3f} \n"
+            filtering_message3 = f"{t} / [cond3: {srsi_d_risingS15}] srsi_k15: {srsi_kS15[-2]:,.3f} >> {srsi_kS15[-1]:,.3f} > {srsi15Rate} / srsi_d15: {srsi_dS15[-2]:,.3f} >> {srsi_dS15[-1]:,.3f} \n"
 
             filtering_message += f"[cond4: {srsi_d_risingS}] {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
             filtering_message4 = f"{t} / [cond4: {srsi_d_risingS}] {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
@@ -527,7 +529,7 @@ def send_profit_report():
             
 trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
 trade_msg = f'{trade_start} trading start / \n'
-trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 / 손절: {cut_rate1}% ~ {cut_rate2}% / srsi: {srsi_value_s} ~ {srsi_value_e}\n \n'
+trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 / 손절: {cut_rate1}% ~ {cut_rate2}% / srsi: {srsi_value_s} ~ {srsi_value_e} / srsi15: {srsi15Rate}\n \n'
 print(trade_msg)
 send_discord_message(trade_msg)
 
