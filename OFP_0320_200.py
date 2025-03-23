@@ -159,7 +159,7 @@ def filtered_tickers(tickers):
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
             # band_diff_margin = 0.01
-            band_diff_15_margin = 0.01
+            band_diff_15_margin = 0.005
 
             # is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
@@ -221,37 +221,37 @@ def filtered_tickers(tickers):
 
             # print(filtering_message)
             if is_increasing_15 :
-                # print(filtering_message1)
+                print(filtering_message)
                 # send_discord_message(filtering_message1)
                 
                 # if is_increasing_5 :
                     # print(filtering_message)
                     # send_discord_message(filtering_message2)
                     
-                    if low_boliinger15 :
-                        print(filtering_message)
-                        send_discord_message(filtering_message)
+                if low_boliinger15 :
+                    print(filtering_message)
+                    send_discord_message(filtering_message)
                         
                         # if low_boliinger :
                         #     print(filtering_message4)
                         #     send_discord_message(filtering_message)
             
-                        if srsi_d_risingS15 :
-                            # print(filtering_message3)
-                            # send_discord_message(filtering_message3)
+                    if srsi_d_risingS15 :
+                        # print(filtering_message3)
+                        # send_discord_message(filtering_message3)
 
-                            if srsi_d_risingS :
-                                # print(filtering_message4)
-                                # send_discord_message(filtering_message4)
+                        if srsi_d_risingS :
+                            # print(filtering_message4)
+                            # send_discord_message(filtering_message4)
 
-                                if low_band_slope_decreasing :
-                                    # print(filtering_message5)
-                                    # send_discord_message(filtering_message5)
+                            if low_band_slope_decreasing :
+                                # print(filtering_message5)
+                                # send_discord_message(filtering_message5)
 
-                                    if red_candle :
-                                        # print(filtering_message6)
-                                        # send_discord_message(filtering_message6)
-                                        filtered_tickers.append(t)
+                                if red_candle :
+                                    # print(filtering_message6)
+                                    # send_discord_message(filtering_message6)
+                                    filtered_tickers.append(t)
 
         except (KeyError, ValueError) as e:
             send_discord_message(f"filtered_tickers/Error processing ticker {t}: {e}")
