@@ -160,7 +160,7 @@ def filtered_tickers(tickers):
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
             # band_diff_margin = 0.01
-            band_diff_15_margin = min_rate * 0.02
+            band_diff_15_margin = min_rate * 0.03
 
             # is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
@@ -423,9 +423,9 @@ def trade_sell(ticker):
                 mpricemsg += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
                 print(mpricemsg)
                 send_discord_message(mpricemsg)
-                return sell_order   
+                return sell_order
             else:
-                mpricefailmsg = f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n "
+                mpricefailmsg = f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
                 mpricefailmsg += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
                 # print(f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
                 send_discord_message(mpricefailmsg)
@@ -435,7 +435,7 @@ def trade_sell(ticker):
                 if cut_price:
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
                     cut_message = f"[손절_CutRate_2%]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
-                    cut_message += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n" 
+                    cut_message += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
                     print(cut_message)
                     send_discord_message(cut_message)
             
