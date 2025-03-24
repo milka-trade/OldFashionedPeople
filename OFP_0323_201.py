@@ -373,7 +373,7 @@ def trade_sell(ticker):
     count_upper_band = sum(1 for i in range(len(up_Bol)) if up_Bol[i] < df_close[i] )
     upper_boliinger = count_upper_band >= 1
 
-    stoch_Rsi = stoch_rsiS(ticker, interval = min5, window = 10)
+    stoch_Rsi = stoch_rsiS(ticker, interval = min15, window = 10)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     
@@ -393,7 +393,7 @@ def trade_sell(ticker):
         if cut_price :
             sell_order = upbit.sell_market_order(ticker, buyed_amount)
             cutTimemsg = f"[장시작전매도]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
-            cutTimemsg += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
+            cutTimemsg += f"srsi_d15: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k15: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
             print(cutTimemsg)
             send_discord_message(cutTimemsg)
         else:
@@ -408,7 +408,7 @@ def trade_sell(ticker):
                 if profit_rate >= max_rate or upper_price :
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
                     sellmsg = f"[!!목표가 달성!!]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n"
-                    sellmsg += f"upper_Bol: {upper_boliinger} / {UpRate} < srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
+                    sellmsg += f"upper_Bol: {upper_boliinger} / {UpRate} < srsi_d15: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k15: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
                     print(sellmsg)
                     send_discord_message(sellmsg)
                     return sell_order
@@ -420,7 +420,7 @@ def trade_sell(ticker):
             if middle_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 mpricemsg = f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
-                mpricemsg += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
+                mpricemsg += f"srsi_d15: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k15: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
                 print(mpricemsg)
                 send_discord_message(mpricemsg)
                 return sell_order
@@ -480,18 +480,26 @@ def send_profit_report():
                             srsi_k = stoch_Rsi14['%K'].values
                             srsi_d = stoch_Rsi14['%D'].values
 
-                            stoch_Rsi10 = stoch_rsiS(f"KRW-{ticker}", interval=min5, window=10)
-                            srsi_k1 = stoch_Rsi10['%K'].values
-                            srsi_d1 = stoch_Rsi10['%D'].values
+                            stoch_Rsi7 = stoch_rsiS(f"KRW-{ticker}", interval=min5, window=7)
+                            srsi_k7 = stoch_Rsi7['%K'].values
+                            srsi_d7 = stoch_Rsi7['%D'].values
+                            
+                            stoch_Rsi15_10 = stoch_rsiS(f"KRW-{ticker}", interval=min15, window=10)
+                            srsi_k15_10 = stoch_Rsi15_10['%K'].values
+                            srsi_d15_10 = stoch_Rsi15_10['%D'].values
+                            
+                            stoch_Rsi15_14 = stoch_rsiS(f"KRW-{ticker}", interval=min15, window=14)
+                            srsi_k15_14 = stoch_Rsi15_14['%K'].values
+                            srsi_d15_14 = stoch_Rsi15_14['%D'].values
 
                             report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {buyed_amount:.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
-
-                            if len(srsi_d) > 2 and len(srsi_k) > 2 :
-                                report_message += f"srsi_d10: {srsi_d1[1]:,.3f} >> {srsi_d1[2]:,.3f} / srsi_k10: {srsi_k1[1]:,.3f} >> {srsi_k1[2]:,.3f} \n"
-                                report_message += f"srsi_d14: {srsi_d[1]:,.3f} >> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} >> {srsi_k[2]:,.3f} \n \n"
+                            report_message += f"srsi_d7: {srsi_d7[1]:,.3f} >> {srsi_d7[2]:,.3f} / srsi_k10: {srsi_k7[1]:,.3f} >> {srsi_k7[2]:,.3f} \n"
+                            report_message += f"srsi_d14: {srsi_d[1]:,.3f} >> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} >> {srsi_k[2]:,.3f} \n"
+                            report_message += f"srsi_d15_10: {srsi_d15_10[1]:,.3f} >> {srsi_d15_10[2]:,.3f} / srsi_k: {srsi_k15_10[1]:,.3f} >> {srsi_k15_10[2]:,.3f} \n"
+                            report_message += f"srsi_d15_14: {srsi_d15_14[1]:,.3f} >> {srsi_d15_14[2]:,.3f} / srsi_k: {srsi_k15_14[1]:,.3f} >> {srsi_k15_14[2]:,.3f} \n \n"
                     
-                            else:
-                                report_message += "RSI 데이터가 충분하지 않습니다.\n"
+                        else:
+                            report_message += "RSI 데이터가 충분하지 않습니다.\n"
                 # 보고서 전송
                 send_discord_message(report_message)
 
