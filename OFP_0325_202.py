@@ -162,7 +162,7 @@ def filtered_tickers(tickers):
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
             # band_diff_margin = 0.01
-            band_diff_15_margin = min_rate * 0.025
+            band_diff_15_margin = min_rate * 0.02
 
             # is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
@@ -186,7 +186,7 @@ def filtered_tickers(tickers):
             slopeRate = 0.9
             low_band_slope_decreasing = slopes_2 * slopeRate > slopes_1
             
-            stoch_RsiS = stoch_rsiS(t, interval = min5, window=10)
+            stoch_RsiS = stoch_rsiS(t, interval = min5, window=7)
             srsi_kS = stoch_RsiS['%K'].values
             srsi_dS = stoch_RsiS['%D'].values
             srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
@@ -205,7 +205,7 @@ def filtered_tickers(tickers):
             filtering_message += f"[cond2: {is_downing15}] LB15_3->1: {lower_band15[-3]:,.2f} >> {lower_band15[-2]:,.2f} >> {lower_band15[-1]:,.2f} \n"
             filtering_message += f"[cond3: {low_boliinger15}] LB15 * {bolRate15}: {lower_band15[-1] * bolRate15:,.3f} or ema15: {last_ema15:,.3f} > df15_close: {df15_close[-1]:,.3f} \n"
             filtering_message += f"[cond4: {low_band_slope_decreasing}] LBSlopes15: {slopes_2 * slopeRate:,.3f} >> {slopes_1:,.3f} \n"
-            filtering_message += f"[cond5: {srsi_d_risingS15}] {srsi_15_k_s}srsi_k15: {srsi_kS15[-2]:,.3f} >> {srsi_kS15[-1]:,.3f} < {srsi_15_k_e} / srsi_d15: {srsi_dS15[-2]:,.3f} >> {srsi_dS15[-1]:,.3f} \n"
+            filtering_message += f"[cond5: {srsi_d_risingS15}] {srsi_15_k_s} < srsi_k15: {srsi_kS15[-2]:,.3f} >> {srsi_kS15[-1]:,.3f} < {srsi_15_k_e} / srsi_d15: {srsi_dS15[-2]:,.3f} >> {srsi_dS15[-1]:,.3f} \n"
             filtering_message += f"[cond6: {red_candle}] df15_open: {df15_open[-1]:,.2f} < df15_close: {df15_close[-1]:,.2f} \n"
             filtering_message += f"[cond7: {srsi_d_risingS}] {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
 
