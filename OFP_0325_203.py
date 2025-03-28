@@ -162,7 +162,7 @@ def filtered_tickers(tickers):
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
             # band_diff_margin = 0.01
-            band_diff_15_margin = min_rate * 0.025
+            band_diff_15_margin = min_rate * 0.04
 
             # is_increasing_5 = band_diff[-1] > band_diff_margin
             is_increasing_15 = band_diff15[-1] > band_diff_15_margin
@@ -186,7 +186,7 @@ def filtered_tickers(tickers):
             slopeRate = 0.9
             low_band_slope_decreasing = slopes_2 * slopeRate > slopes_1
             
-            stoch_RsiS = stoch_rsiS(t, interval = min5, window=7)
+            stoch_RsiS = stoch_rsiS(t, interval = min5, window=14)
             srsi_kS = stoch_RsiS['%K'].values
             srsi_dS = stoch_RsiS['%D'].values
             srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
@@ -207,7 +207,7 @@ def filtered_tickers(tickers):
             filtering_message += f"[cond4: {low_band_slope_decreasing}] LBSlopes15: {slopes_2 * slopeRate:,.3f} >> {slopes_1:,.3f} \n"
             filtering_message += f"[cond5: {srsi_d_risingS15}] {srsi_15_k_s} < srsi_k15: {srsi_kS15[-2]:,.3f} >> {srsi_kS15[-1]:,.3f} < {srsi_15_k_e} / srsi_d15: {srsi_dS15[-2]:,.3f} >> {srsi_dS15[-1]:,.3f} \n"
             filtering_message += f"[cond6: {red_candle}] df15_open: {df15_open[-1]:,.2f} < df15_close: {df15_close[-1]:,.2f} \n"
-            # filtering_message += f"[cond7: {srsi_d_risingS}] {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
+            filtering_message += f"[cond7: {srsi_d_risingS}] {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.3f} >> {srsi_dS[-1]:,.3f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.3f} >> {srsi_kS[-1]:,.3f} \n"
 
 
             # print(filtering_message)
@@ -235,7 +235,7 @@ def filtered_tickers(tickers):
                                     # print(filtering_message)
                                     # send_discord_message(filtering_message)
                                     
-                                    # if srsi_d_risingS :
+                                    if srsi_d_risingS :
                                         # print(filtering_message)
                                         send_discord_message(filtering_message)
                                         filtered_tickers.append(t)
@@ -321,7 +321,7 @@ def trade_buy(ticker):
     cur_price = pyupbit.get_current_price(ticker)    
     attempt = 0 
 
-    stoch_Rsi = stoch_rsiS(ticker, window = 7, interval = min15)
+    stoch_Rsi = stoch_rsiS(ticker, window = 14, interval = min5)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     srsi_buy = (srsi_value_s <= srsi_d[2] <= srsi_value_e) and srsi_k[1] < srsi_k[2]
@@ -370,24 +370,24 @@ def trade_sell(ticker):
     time.sleep(second)
     df_close = df['close'].values
 
-    bands_df = get_bollinger_bands(ticker, interval = min15)
+    bands_df = get_bollinger_bands(ticker, interval = min5)
     up_Bol = bands_df['Upper_Band'].values
     count_upper_band = sum(1 for i in range(len(up_Bol)) if up_Bol[i] < df_close[i] )
     upper_boliinger = count_upper_band >= 1
 
-    stoch_Rsi = stoch_rsiS(ticker, interval = min15, window = 14)
+    stoch_Rsi = stoch_rsiS(ticker, interval = min5, window = 14)
     srsi_k = stoch_Rsi['%K'].values
     srsi_d = stoch_Rsi['%D'].values
     
-    stoch_Rsi15 = stoch_rsiS(ticker, interval = min15, window = 7)
-    srsi_k15 = stoch_Rsi15['%K'].values
-    srsi_d15 = stoch_Rsi15['%D'].values
+    # stoch_Rsi15 = stoch_rsiS(ticker, interval = min15, window = 7)
+    # srsi_k15 = stoch_Rsi15['%K'].values
+    # srsi_d15 = stoch_Rsi15['%D'].values
     
     UpRate = 0.98
     upper_price = (upper_boliinger and srsi_d[2] > UpRate)
-    middle_price15 = 0.5 <= srsi_d15[2] <= 0.85 and srsi_k15[1] > srsi_k15[2]
-    # middle_price = (0.5 <= srsi_k[2] <= 0.85) and srsi_k[1] > srsi_k[2]
-    cut_price = middle_price15 or srsi_d[2] > UpRate
+    # middle_price15 = 0.5 <= srsi_d[2] <= 0.85 and srsi_k[1] > srsi_k[2]
+    middle_price = (0.5 <= srsi_k[2] <= 0.85) and srsi_k[1] > srsi_k[2]
+    cut_price = middle_price or srsi_d[2] > UpRate
 
     max_attempts = sell_time
     attempts = 0
@@ -415,7 +415,7 @@ def trade_sell(ticker):
                 if profit_rate >= max_rate or upper_price :
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
                     sellmsg = f"[!!목표가 달성!!]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n"
-                    sellmsg += f"upper_Bol: {upper_boliinger} / {UpRate} < srsi_d15_7: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k15_7: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
+                    sellmsg += f"upper_Bol: {upper_boliinger} / {UpRate} < srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
                     print(sellmsg)
                     send_discord_message(sellmsg)
                     return sell_order
@@ -424,17 +424,16 @@ def trade_sell(ticker):
                     time.sleep(second)
                 attempts += 1  # 조회 횟수 증가
                 
-            if middle_price15:
+            if middle_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 mpricemsg = f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
-                mpricemsg += f"srsi_d15_7: {srsi_d15[1]:,.2f} >> {srsi_d15[2]:,.2f} > srsi_k15_7: {srsi_k15[1]:,.2f} >> {srsi_k15[2]:,.2f} \n \n"
+                mpricemsg += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
                 print(mpricemsg)
                 send_discord_message(mpricemsg)
                 return sell_order
             else:
                 mpricefailmsg = f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
-                mpricefailmsg += f"srsi_d15_7: {srsi_d15[1]:,.2f} >> {srsi_d15[2]:,.2f} > srsi_k15_7: {srsi_k15[1]:,.2f} >> {srsi_k15[2]:,.2f} \n \n"
-                # print(f"[m_price 미도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} / srsi_d: {srsi_d[1]:,.2f} -> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} -> {srsi_k[2]:,.2f}")
+                mpricefailmsg += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
                 send_discord_message(mpricefailmsg)
                 return None
         else:
@@ -442,14 +441,14 @@ def trade_sell(ticker):
                 if cut_price:
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
                     cut_message = f"[손절_CutRate_2%]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
-                    cut_message += f"srsi_d15_7: {srsi_d15[1]:,.2f} >> {srsi_d15[2]:,.2f} < srsi_k15_7: {srsi_k15[1]:,.2f} >> {srsi_k15[2]:,.2f} \n \n"
+                    cut_message += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k15_7: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
                     print(cut_message)
                     send_discord_message(cut_message)
             
             elif profit_rate < cut_rate2:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 cut_message2 = f"[손절_CutRate_3%]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
-                cut_message2 += f"srsi_d15_7: {srsi_d15[1]:,.2f} >> {srsi_d15[2]:,.2f} < srsi_k15_7: {srsi_k15[1]:,.2f} >> {srsi_k15[2]:,.2f} \n \n" 
+                cut_message2 += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n" 
                 print(cut_message2)
                 send_discord_message(cut_message2)
             else:
@@ -487,23 +486,20 @@ def send_profit_report():
                             srsi_k = stoch_Rsi14['%K'].values
                             srsi_d = stoch_Rsi14['%D'].values
 
-                            stoch_Rsi7 = stoch_rsiS(f"KRW-{ticker}", interval=min5, window=7)
-                            srsi_k7 = stoch_Rsi7['%K'].values
-                            srsi_d7 = stoch_Rsi7['%D'].values
+                            # stoch_Rsi7 = stoch_rsiS(f"KRW-{ticker}", interval=min5, window=7)
+                            # srsi_k7 = stoch_Rsi7['%K'].values
+                            # srsi_d7 = stoch_Rsi7['%D'].values
                             
-                            stoch_Rsi15_7 = stoch_rsiS(f"KRW-{ticker}", interval=min15, window=7)
-                            srsi_k15_7 = stoch_Rsi15_7['%K'].values
-                            srsi_d15_7 = stoch_Rsi15_7['%D'].values
+                            # stoch_Rsi15_7 = stoch_rsiS(f"KRW-{ticker}", interval=min15, window=7)
+                            # srsi_k15_7 = stoch_Rsi15_7['%K'].values
+                            # srsi_d15_7 = stoch_Rsi15_7['%D'].values
                             
-                            stoch_Rsi15_14 = stoch_rsiS(f"KRW-{ticker}", interval=min15, window=14)
-                            srsi_k15_14 = stoch_Rsi15_14['%K'].values
-                            srsi_d15_14 = stoch_Rsi15_14['%D'].values
+                            # stoch_Rsi15_14 = stoch_rsiS(f"KRW-{ticker}", interval=min15, window=14)
+                            # srsi_k15_14 = stoch_Rsi15_14['%K'].values
+                            # srsi_d15_14 = stoch_Rsi15_14['%D'].values
 
                             report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {buyed_amount:.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
-                            report_message += f"srsi_d7: {srsi_d7[1]:,.3f} >> {srsi_d7[2]:,.3f} / srsi_k10: {srsi_k7[1]:,.3f} >> {srsi_k7[2]:,.3f} \n"
-                            report_message += f"srsi_d14: {srsi_d[1]:,.3f} >> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} >> {srsi_k[2]:,.3f} \n"
-                            report_message += f"srsi_d15_10: {srsi_d15_7[1]:,.3f} >> {srsi_d15_7[2]:,.3f} / srsi_k: {srsi_k15_7[1]:,.3f} >> {srsi_k15_7[2]:,.3f} \n"
-                            report_message += f"srsi_d15_14: {srsi_d15_14[1]:,.3f} >> {srsi_d15_14[2]:,.3f} / srsi_k: {srsi_k15_14[1]:,.3f} >> {srsi_k15_14[2]:,.3f} \n \n"
+                            report_message += f"srsi_d: {srsi_d[1]:,.3f} >> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} >> {srsi_k[2]:,.3f} \n"
                     
                         else:
                             report_message += "RSI 데이터가 충분하지 않습니다.\n"
