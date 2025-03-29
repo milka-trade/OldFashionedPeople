@@ -427,7 +427,7 @@ def trade_sell(ticker):
             if middle_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 mpricemsg = f"[m_price 도달]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
-                mpricemsg += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
+                mpricemsg += f"upper_Bol: {upper_boliinger} / srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
                 print(mpricemsg)
                 send_discord_message(mpricemsg)
                 return sell_order
