@@ -134,22 +134,23 @@ def filtered_tickers(tickers):
     
     for t in tickers:
         try:
-            df = pyupbit.get_ohlcv(t, interval=min5, count=6)
-            if df is None:
-                print(f"[filter_tickers] 데이터를 가져올 수 없습니다. {t}")
-                send_discord_message(f"[filter_tickers] 데이터를 가져올 수 없습니다: {t}")
-                continue  # 다음 티커로 넘어감
-            time.sleep(second)
-            df_close = df['close'].values
+            # df = pyupbit.get_ohlcv(t, interval=min5, count=6)
+            # if df is None:
+            #     print(f"[filter_tickers] 데이터를 가져올 수 없습니다. {t}")
+            #     send_discord_message(f"[filter_tickers] 데이터를 가져올 수 없습니다: {t}")
+            #     continue  # 다음 티커로 넘어감
+            # time.sleep(second)
+            # df_close = df['close'].values
 
-            df15 = pyupbit.get_ohlcv(t, interval=min15, count=6)
-            if df15 is None:
-                print(f"[filter_tickers] 데이터를 가져올 수 없습니다. {t}")
-                send_discord_message(f"[filter_tickers] 데이터를 가져올 수 없습니다: {t}")
-                continue  # 다음 티커로 넘어감
-            time.sleep(second)
-            df15_open = df15['open'].values
-            df15_close = df15['close'].values
+            # df15 = pyupbit.get_ohlcv(t, interval=min15, count=6)
+            # if df15 is None:
+            #     print(f"[filter_tickers] 데이터를 가져올 수 없습니다. {t}")
+            #     send_discord_message(f"[filter_tickers] 데이터를 가져올 수 없습니다: {t}")
+            #     continue  # 다음 티커로 넘어감
+            # time.sleep(second)
+
+            # df15_open = df15['open'].values
+            # df15_close = df15['close'].values
             
             bands_df = get_bollinger_bands(t, interval = min5)
             upper_band = bands_df['Upper_Band'].values
@@ -161,20 +162,20 @@ def filtered_tickers(tickers):
             lower_band15 = bands_df15['Lower_Band'].values
             band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
-            band_diff_margin = 0.02
+            band_diff_margin = 0.03
             # band_diff_15_margin = min_rate * 0.05
 
             is_increasing_5 = band_diff[-1] > band_diff_margin
             # is_increasing_15 = band_diff15[-1] > band_diff_15_margin
             
-            last_ema5 = get_ema(t, interval = min5).iloc[-1]
-            last_ema15 = get_ema(t, interval = min15).iloc[-1]
+            # last_ema5 = get_ema(t, interval = min5).iloc[-1]
+            # last_ema15 = get_ema(t, interval = min15).iloc[-1]
 
-            count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < min(lower_band[i] , last_ema5))
-            count_below_lower_band15 = sum(1 for i in range(len(lower_band15)) if df15_close[i] < min(lower_band15[i], last_ema15))
+            # count_below_lower_band = sum(1 for i in range(len(lower_band15)) if df_close[i] < min(lower_band[i] , last_ema5))
+            # count_below_lower_band15 = sum(1 for i in range(len(lower_band15)) if df15_close[i] < min(lower_band15[i], last_ema15))
             
-            low_boliinger = count_below_lower_band >= 1 
-            low_boliinger15 = count_below_lower_band15 >= 1 
+            # low_boliinger = count_below_lower_band >= 1 
+            # low_boliinger15 = count_below_lower_band15 >= 1 
             
             # is_downing15 = lower_band15[-3] > lower_band15[-2] > lower_band15[-1]
             
@@ -188,7 +189,7 @@ def filtered_tickers(tickers):
             srsi_dS = stoch_RsiS['%D'].values
             srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
 
-            red_candle = df15_open[-1] < df15_close[-1]
+            # red_candle = df15_open[-1] < df15_close[-1]
 
             stoch_RsiS15 = stoch_rsiS(t, interval = min15, window=14)
             srsi_kS15 = stoch_RsiS15['%K'].values
@@ -199,42 +200,42 @@ def filtered_tickers(tickers):
             filteringTime = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
             filtering_message += f"[cond1: {is_increasing_5}] band_diff: {band_diff15[-1]} > {band_diff_margin} \n"
-            filtering_message += f"[cond2: {low_boliinger15}] LB15: {lower_band15[-1]:,.2f} or ema15: {last_ema15:,.2f} > df15_close: {df15_close[-1]:,.2f} \n"
-            filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-3]:,.2f} >> {lower_band[-2]:,.2f} >> {lower_band[-1]:,.2f} \n"
+            # filtering_message += f"[cond2: {low_boliinger15}] LB15: {lower_band15[-1]:,.2f} or ema15: {last_ema15:,.2f} > df15_close: {df15_close[-1]:,.2f} \n"
+            # filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-3]:,.2f} >> {lower_band[-2]:,.2f} >> {lower_band[-1]:,.2f} \n"
             filtering_message += f"[cond4: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
             filtering_message += f"[cond5: {srsi_d_risingS15}] {srsi_15_k_s} < srsi_k15: {srsi_kS15[-2]:,.2f} >> {srsi_kS15[-1]:,.2f} < {srsi_15_k_e} / srsi_d15: {srsi_dS15[-2]:,.2f} >> {srsi_dS15[-1]:,.2f} \n"
-            filtering_message += f"[cond6: {red_candle}] df15_open: {df15_open[-1]:,.2f} < df15_close: {df15_close[-1]:,.2f} \n"
+            # filtering_message += f"[cond6: {red_candle}] df15_open: {df15_open[-1]:,.2f} < df15_close: {df15_close[-1]:,.2f} \n"
             filtering_message += f"[cond7: {srsi_d_risingS}] {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.2f} >> {srsi_dS[-1]:,.2f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.2f} >> {srsi_kS[-1]:,.2f} \n"
 
 
             # print(filtering_message)
             if is_increasing_5 :
-                print(filtering_message)
+                # print(filtering_message)
                 # send_discord_message(filtering_message)
                                     
-                if low_boliinger15 :
-                    # print(filtering_message)
-                    # send_discord_message(filtering_message)
+                # if low_boliinger15 :
+                #     print(filtering_message)
+                #     send_discord_message(filtering_message)
 
-                    if low_boliinger :
+                    # if low_boliinger :
                         # print(filtering_message)
                         # send_discord_message(filtering_message)
                             
                         if low_band_slope_decreasing :
-                            # print(filtering_message)
-                            # send_discord_message(filtering_message)
+                            print(filtering_message)
+                            send_discord_message(filtering_message)
 
                             if srsi_d_risingS15 :
                                 # print(filtering_message)
                                 # send_discord_message(filtering_message)
 
-                                if red_candle :
+                                # if red_candle :
                                     # print(filtering_message)
                                     # send_discord_message(filtering_message)
                                     
                                     if srsi_d_risingS :
                                         # print(filtering_message)
-                                        send_discord_message(filtering_message)
+                                        # send_discord_message(filtering_message)
                                         filtered_tickers.append(t)
 
         except (KeyError, ValueError) as e:
@@ -245,7 +246,7 @@ def filtered_tickers(tickers):
 
 def get_best_ticker():
     selected_tickers = ["KRW-ETH", "KRW-BTC", "KRW-XRP", "KRW-SOL", "KRW-ADA", "KRW-HBAR", "KRW-XLM", "KRW-DOGE"]  #"KRW-BTC", 
-    excluded_tickers = ["KRW-QI", "KRW-ONX", "KRW-ETHF", "KRW-ETHW", "KRW-PURSE", "KRW-USDT", "KRW-BERA", "KRW-VTHO", "KRW-SBD", "KRW-JTO", "KRW-SCR", "KRW-VIRTUAL", "KRW-SOLVE", "KRW-IOST", "KRW-HIFI", "KRW-WAL", "KRW-ORCA", "KRW-CRO", "KRW-LOOM", "KRW-ARKM", "KRW-KAITO", "KRW-COW", "KRW-TRUMP"]  # 제외할 코인 리스트
+    # excluded_tickers = ["KRW-QI", "KRW-ONX", "KRW-ETHF", "KRW-ETHW", "KRW-PURSE", "KRW-USDT", "KRW-BERA", "KRW-VTHO", "KRW-SBD", "KRW-JTO", "KRW-SCR", "KRW-VIRTUAL", "KRW-SOLVE", "KRW-IOST", "KRW-HIFI", "KRW-WAL", "KRW-ORCA", "KRW-CRO", "KRW-LOOM", "KRW-ARKM", "KRW-KAITO", "KRW-COW", "KRW-TRUMP"]  # 제외할 코인 리스트
     balances = upbit.get_balances()
     held_coins = []
 
@@ -263,16 +264,16 @@ def get_best_ticker():
         filtering_tickers = []
 
         for ticker in all_tickers:
-            if ticker not in excluded_tickers or ticker in selected_tickers :
-                if ticker not in held_coins : 
+            # if ticker not in excluded_tickers or ticker in selected_tickers :
+            #     if ticker not in held_coins : 
 
-            # if ticker in selected_tickers and ticker not in held_coins:
+            if ticker in selected_tickers and ticker not in held_coins:
 
                     df = pyupbit.get_ohlcv(ticker, interval="day", count=1)
                     time.sleep(second)
                     df_open = df['open'].iloc[-1]
                     # df_close = df['close'].iloc[-1]
-                    df_value = df['value'].iloc[-1]
+                    # df_value = df['value'].iloc[-1]
 
                     cur_price = pyupbit.get_current_price(ticker)
 
@@ -289,6 +290,10 @@ def get_best_ticker():
         return None
 
     filtered_list = filtered_tickers(filtering_tickers)
+    # filtered_time = datetime.now().strftime('%m/%d %H:%M:%S')
+    # print(filtered_list)
+    # send_discord_message(f"{filtered_time} [{filtered_list}]")
+
     if len(filtered_list) > 0 :
         filtered_time = datetime.now().strftime('%m/%d %H:%M:%S')
         send_discord_message(f"{filtered_time} [{filtered_list}]")
