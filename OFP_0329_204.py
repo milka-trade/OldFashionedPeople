@@ -36,8 +36,8 @@ srsi_value_e = 0.7
 def get_user_input():
     while True:
         try:
-            min_rate = float(input("최소 수익률 (예: 0.1): "))
-            max_rate = float(input("최대 수익률 (예: 3.0): "))
+            min_rate = float(input("최소 수익률 (예: 0.15): "))
+            max_rate = float(input("최대 수익률 (예: 1.0): "))
             sell_time = int(input("매도감시횟수 (예: 200): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
