@@ -30,7 +30,7 @@ min5 = "minute5"
 srsi_value_s = 0.1
 srsi_value_e = 0.7
 middle_price_rate = 0.9
-band_diff_margin = 0.016
+band_diff_margin = 0.017
 
 # srsi_15_k_s = 0
 # srsi_15_k_e = 0.5
@@ -190,7 +190,7 @@ def filtered_tickers(tickers):
             srsi_kS = stoch_RsiS['%K'].values
             srsi_dS = stoch_RsiS['%D'].values
             # srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
-            srsi_cross = srsi_value_s <= srsi_dS[-1] < srsi_value_e and srsi_kS[-2] <= srsi_dS[-2] and srsi_dS[-1] < srsi_kS[-1] 
+            srsi_cross = srsi_value_s <= srsi_dS[-1] < srsi_value_e and srsi_dS[-1] < srsi_kS[-1] 
 
             red_candle = df_open[-1] < df_close[-1]
 
