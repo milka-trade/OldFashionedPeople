@@ -206,7 +206,7 @@ def filtered_tickers(tickers):
             # filtering_message += f"[cond4: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
             # filtering_message += f"[cond5: {srsi_d_risingS15}] {srsi_15_k_s} < srsi_k15: {srsi_kS15[-2]:,.2f} >> {srsi_kS15[-1]:,.2f} < {srsi_15_k_e} / srsi_d15: {srsi_dS15[-2]:,.2f} >> {srsi_dS15[-1]:,.2f} \n"
             filtering_message += f"[cond6: {red_candle}] df_open: {df_open[-1]:,.2f} < df_close: {df_close[-1]:,.2f} \n"
-            filtering_message += f"[cond7: {srsi_cross}] {srsi_value_s} < srsi_d_2: {srsi_dS[-2]:,.2f} >= srsi_k_2: {srsi_kS[-2]:,.2f} >> srsi_d_1: {srsi_dS[-1]:,.2f} < srsi_k_1: {srsi_kS[-1]:,.2f} < {srsi_value_e} \n"
+            filtering_message += f"[cond7: {srsi_cross}] {srsi_value_s} < srsi_d:k_2: {srsi_dS[-2]:,.2f} >= {srsi_kS[-2]:,.2f} >> srsi_d:k_1: {srsi_dS[-1]:,.2f} < {srsi_kS[-1]:,.2f} < {srsi_value_e} \n"
 
 
             # print(filtering_message)
