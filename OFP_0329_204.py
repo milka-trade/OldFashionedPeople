@@ -27,11 +27,11 @@ count_200 = 200
 
 min15 = "minute15"
 min5 = "minute5"
-srsi_value_s = 0.2
-srsi_value_e = 0.4
+srsi_value_s = 0.1
+srsi_value_e = 0.7
 
-srsi_15_k_s = 0
-srsi_15_k_e = 0.5
+# srsi_15_k_s = 0
+# srsi_15_k_e = 0.5
 
 def get_user_input():
     while True:
@@ -187,7 +187,8 @@ def filtered_tickers(tickers):
             stoch_RsiS = stoch_rsiS(t, interval = min5, window=14)
             srsi_kS = stoch_RsiS['%K'].values
             srsi_dS = stoch_RsiS['%D'].values
-            srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
+            # srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
+            srsi_cross = srsi_value_s <= srsi_dS[-1] < srsi_value_e and srsi_kS[-2] <= srsi_dS[-2] and srsi_dS[-1] < srsi_kS[-1] 
 
             red_candle = df_open[-1] < df_close[-1]
 
@@ -205,7 +206,7 @@ def filtered_tickers(tickers):
             # filtering_message += f"[cond4: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
             # filtering_message += f"[cond5: {srsi_d_risingS15}] {srsi_15_k_s} < srsi_k15: {srsi_kS15[-2]:,.2f} >> {srsi_kS15[-1]:,.2f} < {srsi_15_k_e} / srsi_d15: {srsi_dS15[-2]:,.2f} >> {srsi_dS15[-1]:,.2f} \n"
             filtering_message += f"[cond6: {red_candle}] df_open: {df_open[-1]:,.2f} < df_close: {df_close[-1]:,.2f} \n"
-            filtering_message += f"[cond7: {srsi_d_risingS}] {srsi_value_s} < srsi_d: {srsi_dS[-2]:,.2f} >> {srsi_dS[-1]:,.2f} < {srsi_value_e} / srsi_k: {srsi_kS[-2]:,.2f} >> {srsi_kS[-1]:,.2f} \n"
+            filtering_message += f"[cond7: {srsi_cross}] {srsi_value_s} < srsi_d_2: {srsi_dS[-2]:,.2f} >= srsi_k_2: {srsi_kS[-2]:,.2f} >> srsi_d_1: {srsi_dS[-1]:,.2f} < srsi_k_1: {srsi_kS[-1]:,.2f} < {srsi_value_e} \n"
 
 
             # print(filtering_message)
@@ -233,7 +234,7 @@ def filtered_tickers(tickers):
                     # print(filtering_message)
                     # send_discord_message(filtering_message)
                                     
-                    if srsi_d_risingS :
+                    if srsi_cross :
                         # print(filtering_message)
                         send_discord_message(filtering_message)
                         filtered_tickers.append(t)
@@ -532,7 +533,7 @@ def send_profit_report():
             
 trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
 trade_msg = f'{trade_start} trading start / \n'
-trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 / 손절: {cut_rate1}% ~ {cut_rate2}% / srsi: {srsi_value_s} ~ {srsi_value_e} / srsi15: {srsi_15_k_s} ~ {srsi_15_k_e} \n'
+trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 손절: {cut_rate1}% ~ {cut_rate2}% / srsiD: {srsi_value_s} ~ {srsi_value_e} \n'
 print(trade_msg)
 send_discord_message(trade_msg)
 
