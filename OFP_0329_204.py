@@ -27,8 +27,10 @@ count_200 = 200
 
 min15 = "minute15"
 min5 = "minute5"
-srsi_value_s = 0.2
+srsi_value_s = 0.1
 srsi_value_e = 0.7
+middle_price_rate = 0.9
+band_diff_margin = 0.016
 
 # srsi_15_k_s = 0
 # srsi_15_k_e = 0.5
@@ -163,7 +165,7 @@ def filtered_tickers(tickers):
             # band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
             # band_diff_margin = 0.03
-            band_diff_margin = 0.015
+
 
             is_increasing_5 = band_diff[-1] > band_diff_margin
             # is_increasing_15 = band_diff15[-1] > band_diff_15_margin
@@ -393,7 +395,7 @@ def trade_sell(ticker):
     # srsi_d15 = stoch_Rsi15['%D'].values
     
     UpRate = 0.95
-    middle_price_rate = 0.95
+    
     upper_price = (upper_boliinger and srsi_d[2] > UpRate)
     # middle_price15 = 0.5 <= srsi_d[2] <= 0.85 and srsi_k[1] > srsi_k[2]
     middle_price = (0.5 <= srsi_k[2] <= middle_price_rate) and srsi_k[1] > srsi_k[2]
