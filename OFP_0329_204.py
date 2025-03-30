@@ -211,7 +211,7 @@ def filtered_tickers(tickers):
 
             # print(filtering_message)
             if is_increasing_5 :
-                print(filtering_message)
+                # print(filtering_message)
                 # send_discord_message(filtering_message)
                                     
                 # if low_boliinger15 :
@@ -231,7 +231,7 @@ def filtered_tickers(tickers):
                                 # send_discord_message(filtering_message)
 
                 if red_candle :
-                    # print(filtering_message)
+                    print(filtering_message)
                     # send_discord_message(filtering_message)
                                     
                     if srsi_cross :
@@ -393,9 +393,10 @@ def trade_sell(ticker):
     # srsi_d15 = stoch_Rsi15['%D'].values
     
     UpRate = 0.95
+    middle_price_rate = 0.95
     upper_price = (upper_boliinger and srsi_d[2] > UpRate)
     # middle_price15 = 0.5 <= srsi_d[2] <= 0.85 and srsi_k[1] > srsi_k[2]
-    middle_price = (0.5 <= srsi_k[2] <= 0.9) and srsi_k[1] > srsi_k[2]
+    middle_price = (0.5 <= srsi_k[2] <= middle_price_rate) and srsi_k[1] > srsi_k[2]
     cut_price = middle_price or srsi_d[2] > UpRate
 
     max_attempts = sell_time
