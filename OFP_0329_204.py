@@ -27,7 +27,7 @@ count_200 = 200
 
 min15 = "minute15"
 min5 = "minute5"
-srsi_value_s = 0.1
+srsi_value_s = 0.2
 srsi_value_e = 0.7
 
 # srsi_15_k_s = 0
@@ -134,7 +134,7 @@ def filtered_tickers(tickers):
     
     for t in tickers:
         try:
-            df = pyupbit.get_ohlcv(t, interval=min5, count=6)
+            df = pyupbit.get_ohlcv(t, interval=min5, count=1)
             if df is None:
                 print(f"[filter_tickers] 데이터를 가져올 수 없습니다. {t}")
                 send_discord_message(f"[filter_tickers] 데이터를 가져올 수 없습니다: {t}")
@@ -163,7 +163,7 @@ def filtered_tickers(tickers):
             # band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
             # band_diff_margin = 0.03
-            band_diff_margin = min_rate * 0.12
+            band_diff_margin = 0.015
 
             is_increasing_5 = band_diff[-1] > band_diff_margin
             # is_increasing_15 = band_diff15[-1] > band_diff_15_margin
@@ -532,8 +532,8 @@ def send_profit_report():
             time.sleep(5)
             
 trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
-trade_msg = f'{trade_start} trading start / \n'
-trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 손절: {cut_rate1}% ~ {cut_rate2}% / srsiD: {srsi_value_s} ~ {srsi_value_e} \n'
+trade_msg = f'{trade_start} trading start \n'
+trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 손절: {cut_rate1}% ~ {cut_rate2}% / srsiD: {srsi_value_s} ~ {srsi_value_e}\n'
 print(trade_msg)
 send_discord_message(trade_msg)
 
