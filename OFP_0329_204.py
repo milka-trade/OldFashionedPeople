@@ -395,7 +395,7 @@ def trade_sell(ticker):
     UpRate = 0.95
     upper_price = (upper_boliinger and srsi_d[2] > UpRate)
     # middle_price15 = 0.5 <= srsi_d[2] <= 0.85 and srsi_k[1] > srsi_k[2]
-    middle_price = (0.5 <= srsi_k[2] <= 0.95) and srsi_k[1] > srsi_k[2]
+    middle_price = (0.5 <= srsi_k[2] <= 0.9) and srsi_k[1] > srsi_k[2]
     cut_price = middle_price or srsi_d[2] > UpRate
 
     max_attempts = sell_time
