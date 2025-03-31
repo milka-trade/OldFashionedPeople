@@ -42,7 +42,7 @@ band_diff_margin = 0.02
 UpRsiRate = 0.55
 
 rsi_sell_s = 0.5
-rsi_sell_e = 0.6
+rsi_sell_e = 0.7
 
 def get_user_input():
     while True:
@@ -572,8 +572,11 @@ def send_profit_report():
                             srsi_k = stoch_Rsi14['%K'].values
                             srsi_d = stoch_Rsi14['%D'].values
                             
-                            ta_rsi = get_rsi(ticker, 14, interval = min5)
+                            ta_rsi = get_rsi(f"KRW-{ticker}", 14, interval = min5)
                             rsi = ta_rsi.values
+                            
+                            ta_rsi9 = get_rsi(f"KRW-{ticker}", 9, interval = min5)
+                            rsi9 = ta_rsi9.values
 
                             # stoch_Rsi7 = stoch_rsiS(f"KRW-{ticker}", interval=min5, window=7)
                             # srsi_k7 = stoch_Rsi7['%K'].values
@@ -590,6 +593,7 @@ def send_profit_report():
                             report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {buyed_amount:.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
                             report_message += f"srsi_d: {srsi_d[1]:,.3f} >> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} >> {srsi_k[2]:,.3f} \n"
                             report_message += f"rsi: {rsi[-2]:,.3f} >> {rsi[-1]:,.3f} \n"
+                            report_message += f"rsi9: {rsi9[-2]:,.3f} >> {rsi9[-1]:,.3f} \n"
                     
                         else:
                             report_message += "RSI 데이터가 충분하지 않습니다.\n"
@@ -614,7 +618,7 @@ def send_profit_report():
             
 trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
 trade_msg = f'{trade_start} trading start \n'
-trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 Rsi: {rsi_buy_s} ~ {rsi_buy_e} / 손절: {cut_rate}% \n'    #srsiD: {srsi_value_s} ~ {srsi_value_e}
+trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 RsiBuy: {rsi_buy_s} ~ {rsi_buy_e} / RsiSell: {rsi_sell_s} ~ {rsi_sell_e} / 손절: {cut_rate}% \n'    #srsiD: {srsi_value_s} ~ {srsi_value_e}
 
 print(trade_msg)
 send_discord_message(trade_msg)
