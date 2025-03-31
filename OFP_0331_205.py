@@ -27,8 +27,8 @@ count_200 = 200
 
 # min15 = "minute15"
 min5 = "minute5"
-# srsi_value_s = 0.1
-# srsi_value_e = 0.7
+srsi_value_s = 0.1
+srsi_value_e = 0.4
 
 rsi_buy_s = 0.25
 rsi_buy_e = 0.4
@@ -169,7 +169,7 @@ def filtered_tickers(tickers):
             #     continue  # 다음 티커로 넘어감
             # time.sleep(second)
 
-            df_open = df['open'].values
+            # df_open = df['open'].values
             df_close = df['close'].values
             
             # bands_df = get_bollinger_bands(t, interval = min5)
@@ -192,7 +192,7 @@ def filtered_tickers(tickers):
             last_ema5 = get_ema(t, interval = min5).iloc[-1]
             # last_ema15 = get_ema(t, interval = min15).iloc[-1]
 
-            count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_close[i] < min(lower_band[i] , last_ema5))
+            count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_close[i] < min(lower_band[i]  * 1.005, last_ema5))
             # count_below_lower_band15 = sum(1 for i in range(len(lower_band15)) if df15_close[i] < min(lower_band15[i], last_ema15))
             
             low_boliinger = count_below_lower_band >= 1 
@@ -205,10 +205,10 @@ def filtered_tickers(tickers):
             low_band_slope_decreasing = abs(slopes[-2]) * slopeRate > abs(slopes[-1])
             # slopes_2 * slopeRate > slopes_1
             
-            # stoch_RsiS = stoch_rsiS(t, interval = min5, window=14)
-            # srsi_kS = stoch_RsiS['%K'].values
-            # srsi_dS = stoch_RsiS['%D'].values
-            # srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
+            stoch_RsiS = stoch_rsiS(t, interval = min5, window=14)
+            srsi_kS = stoch_RsiS['%K'].values
+            srsi_dS = stoch_RsiS['%D'].values
+            srsi_rising = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
             # srsi_cross = srsi_value_s <= srsi_dS[-1] < srsi_value_e and srsi_dS[-1] < srsi_kS[-1] 
 
             # red_candle = df_open[-1] < df_close[-1]
@@ -233,10 +233,9 @@ def filtered_tickers(tickers):
             # filtering_message += f"[cond2: {low_boliinger15}] LB15: {lower_band15[-1]:,.2f} or ema15: {last_ema15:,.2f} > df15_close: {df15_close[-1]:,.2f} \n"
             filtering_message += f"[cond2: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
             filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-1]:,.2f} or ema15: {last_ema5:,.2f} > df15_close: {df_close[-1]:,.2f} \n"
-
-            # filtering_message += f"[cond5: {srsi_d_risingS15}] {srsi_15_k_s} < srsi_k15: {srsi_kS15[-2]:,.2f} >> {srsi_kS15[-1]:,.2f} < {srsi_15_k_e} / srsi_d15: {srsi_dS15[-2]:,.2f} >> {srsi_dS15[-1]:,.2f} \n"
             # filtering_message += f"[cond6: {red_candle}] df_open: {df_open[-1]:,.2f} < df_close: {df_close[-1]:,.2f} \n"
             filtering_message += f"[cond4: {rsi_rising}] {rsi_buy_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_buy_e} \n"
+            filtering_message += f"[cond5: {srsi_rising}] {srsi_value_s} < srsi_k: {srsi_kS[-2]:,.2f} >> {srsi_kS[-1]:,.2f} < {srsi_value_e} / srsi_d: {srsi_dS[-2]:,.2f} >> {srsi_dS[-1]:,.2f} \n"
             # filtering_message += f"[cond8: {rsi_cross}] {rsi_buy_s} < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < {rsi_buy_e} \n"
             # filtering_message += f"[cond7: {srsi_cross}] {srsi_value_s} < srsi_d:k_2: {srsi_dS[-2]:,.2f} >= {srsi_kS[-2]:,.2f} >> srsi_d:k_1: {srsi_dS[-1]:,.2f} < {srsi_kS[-1]:,.2f} < {srsi_value_e} \n"
 
@@ -255,7 +254,10 @@ def filtered_tickers(tickers):
 
                     if low_boliinger and rsi_rising:
                         # print(filtering_message)
-                        send_discord_message(filtering_message)
+
+                        if srsi_rising :
+                            send_discord_message(filtering_message)
+                            filtered_tickers.append(t)
 
                             # if srsi_d_risingS15 :
                                 # print(filtering_message)
@@ -276,7 +278,7 @@ def filtered_tickers(tickers):
                     # if srsi_cross :
                     #     # print(filtering_message)
                     #     send_discord_message(filtering_message)
-                        filtered_tickers.append(t)
+                        
 
         except (KeyError, ValueError) as e:
             send_discord_message(f"filtered_tickers/Error processing ticker {t}: {e}")
