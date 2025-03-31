@@ -31,18 +31,18 @@ min5 = "minute5"
 # srsi_value_e = 0.7
 
 rsi_buy_s = 0.25
-rsi_buy_e = 0.35
+rsi_buy_e = 0.4
 
 # middle_price_rate = 0.9
-band_diff_margin = 0.02
+band_diff_margin = 0.015
 
 # srsi_15_k_s = 0
 # srsi_15_k_e = 0.5
 
-UpRsiRate = 0.55
+UpRsiRate = 0.7
 
 rsi_sell_s = 0.5
-rsi_sell_e = 0.7
+rsi_sell_e = 0.65
 
 def get_user_input():
     while True:
@@ -129,7 +129,7 @@ def get_rsi(ticker, period, interval=min5):
 
     return rsi.tail(3) if not rsi.empty else None 
 
-def get_bollinger_bands(ticker, interval = min5, window=20, std_dev=3):
+def get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2.5):
     """특정 티커의 볼린저 밴드 상단 및 하단값을 가져오는 함수"""
     df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
     time.sleep(second)
@@ -173,7 +173,7 @@ def filtered_tickers(tickers):
             df_close = df['close'].values
             
             # bands_df = get_bollinger_bands(t, interval = min5)
-            bands_df = get_bollinger_bands(t, interval = min5, window=20, std_dev=3)
+            bands_df = get_bollinger_bands(t, interval = min5, window=20, std_dev=2.5)
             upper_band = bands_df['Upper_Band'].values
             lower_band = bands_df['Lower_Band'].values
             band_diff = (upper_band - lower_band) / lower_band
@@ -200,9 +200,9 @@ def filtered_tickers(tickers):
             
             # is_downing15 = lower_band15[-3] > lower_band15[-2] > lower_band15[-1]
             
-            # slopes = np.diff(lower_band)
-            # slopeRate = 0.7
-            # low_band_slope_decreasing = abs(slopes[-2]) * slopeRate > abs(slopes[-1])
+            slopes = np.diff(lower_band)
+            slopeRate = 0.75
+            low_band_slope_decreasing = abs(slopes[-2]) * slopeRate > abs(slopes[-1])
             # slopes_2 * slopeRate > slopes_1
             
             # stoch_RsiS = stoch_rsiS(t, interval = min5, window=14)
@@ -211,7 +211,7 @@ def filtered_tickers(tickers):
             # srsi_d_risingS = srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (srsi_kS[-2] <= srsi_kS[-1])
             # srsi_cross = srsi_value_s <= srsi_dS[-1] < srsi_value_e and srsi_dS[-1] < srsi_kS[-1] 
 
-            red_candle = df_open[-1] < df_close[-1]
+            # red_candle = df_open[-1] < df_close[-1]
 
             # stoch_RsiS15 = stoch_rsiS(t, interval = min15, window=14)
             # srsi_kS15 = stoch_RsiS15['%K'].values
@@ -223,59 +223,60 @@ def filtered_tickers(tickers):
             rsi = ta_rsi.values
             rsi_rising = rsi[-2] < rsi[-1] and rsi_buy_s < rsi[-1] < rsi_buy_e
             
-            ta_rsi9 = get_rsi(t, 9, interval = min5)
-            rsi9 = ta_rsi9.values
-            rsi_cross = rsi9[-2] >= rsi[-2]  and rsi9[-2] < rsi[-1] and rsi_buy_s < rsi9[-1] < rsi_buy_e
+            # ta_rsi9 = get_rsi(t, 9, interval = min5)
+            # rsi9 = ta_rsi9.values
+            # rsi_cross = rsi9[-2] >= rsi[-2]  and rsi9[-2] < rsi[-1] and rsi_buy_s < rsi9[-1] < rsi_buy_e
 
             filteringTime = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
             filtering_message += f"[cond1: {is_increasing_5}] band_diff: {band_diff[-1]} > {band_diff_margin} \n"
             # filtering_message += f"[cond2: {low_boliinger15}] LB15: {lower_band15[-1]:,.2f} or ema15: {last_ema15:,.2f} > df15_close: {df15_close[-1]:,.2f} \n"
+            filtering_message += f"[cond2: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
             filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-1]:,.2f} or ema15: {last_ema5:,.2f} > df15_close: {df_close[-1]:,.2f} \n"
-            # filtering_message += f"[cond4: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
+
             # filtering_message += f"[cond5: {srsi_d_risingS15}] {srsi_15_k_s} < srsi_k15: {srsi_kS15[-2]:,.2f} >> {srsi_kS15[-1]:,.2f} < {srsi_15_k_e} / srsi_d15: {srsi_dS15[-2]:,.2f} >> {srsi_dS15[-1]:,.2f} \n"
-            filtering_message += f"[cond6: {red_candle}] df_open: {df_open[-1]:,.2f} < df_close: {df_close[-1]:,.2f} \n"
-            filtering_message += f"[cond7: {rsi_rising}] {rsi_buy_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_buy_e} \n"
-            filtering_message += f"[cond8: {rsi_cross}] {rsi_buy_s} < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < {rsi_buy_e} \n"
+            # filtering_message += f"[cond6: {red_candle}] df_open: {df_open[-1]:,.2f} < df_close: {df_close[-1]:,.2f} \n"
+            filtering_message += f"[cond4: {rsi_rising}] {rsi_buy_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_buy_e} \n"
+            # filtering_message += f"[cond8: {rsi_cross}] {rsi_buy_s} < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < {rsi_buy_e} \n"
             # filtering_message += f"[cond7: {srsi_cross}] {srsi_value_s} < srsi_d:k_2: {srsi_dS[-2]:,.2f} >= {srsi_kS[-2]:,.2f} >> srsi_d:k_1: {srsi_dS[-1]:,.2f} < {srsi_kS[-1]:,.2f} < {srsi_value_e} \n"
 
-            # print(filtering_message)
+            print(filtering_message)
             if is_increasing_5 :
-                print(filtering_message)
+                # print(filtering_message)
                 # send_discord_message(filtering_message)
                                     
                 # if low_boliinger15 :
                 #     print(filtering_message)
                 #     send_discord_message(filtering_message)
-
-                if low_boliinger :
-                        # print(filtering_message)
-                        # send_discord_message(filtering_message)
                             
-                # if low_band_slope_decreasing :
-                #             print(filtering_message)
-                #             send_discord_message(filtering_message)
+                if low_band_slope_decreasing :
+                    print(filtering_message)
+                            # send_discord_message(filtering_message)
+
+                    if low_boliinger and rsi_rising:
+                        # print(filtering_message)
+                        send_discord_message(filtering_message)
 
                             # if srsi_d_risingS15 :
                                 # print(filtering_message)
                                 # send_discord_message(filtering_message)
 
-                        if red_candle :
-                            print(filtering_message)
+                        # if red_candle :
+                        #     print(filtering_message)
                             # send_discord_message(filtering_message)
                                             
-                            if rsi_rising :
-                                print(filtering_message)
-                                send_discord_message(filtering_message)
+                    # if rsi_rising :
+                    #     print(filtering_message)
+                    #     send_discord_message(filtering_message)
                                 
-                            if rsi_cross :
-                                print(filtering_message)
-                                send_discord_message(filtering_message)
+                # if rsi_cross :
+                #     print(filtering_message)
+                    # send_discord_message(filtering_message)
                         
                     # if srsi_cross :
                     #     # print(filtering_message)
                     #     send_discord_message(filtering_message)
-                                filtered_tickers.append(t)
+                        filtered_tickers.append(t)
 
         except (KeyError, ValueError) as e:
             send_discord_message(f"filtered_tickers/Error processing ticker {t}: {e}")
@@ -387,11 +388,11 @@ def trade_buy(ticker):
     ta_rsi = get_rsi(ticker, 14, interval = min5)
     rsi = ta_rsi.values
     
-    ta_rsi9 = get_rsi(ticker, 9, interval = min5)
-    rsi9 = ta_rsi9.values
+    # ta_rsi9 = get_rsi(ticker, 9, interval = min5)
+    # rsi9 = ta_rsi9.values
     
     rsi_rising = rsi[-2] < rsi[-1] and rsi_buy_s < rsi[-1] < rsi_buy_e
-    rsi_cross = rsi9[-2] >= rsi[-2]  and rsi9[-2] < rsi[-1] and rsi_buy_s < rsi9[-1] < rsi_buy_e
+    # rsi_cross = rsi9[-2] >= rsi[-2]  and rsi9[-2] < rsi[-1] and rsi_buy_s < rsi9[-1] < rsi_buy_e
     
     last_ema = get_ema(ticker, interval = min5).iloc[-1]
 
@@ -401,7 +402,7 @@ def trade_buy(ticker):
             print(f"[가격 확인 중]: {ticker} rsi_rising: {rsi_rising} / 현재가: {cur_price:,.2f} / 시도: {attempt} - 최대: {max_retries}")
             
             # if srsi_buy and cur_price < last_ema :
-            if (rsi_rising and cur_price < last_ema) or (rsi_cross and cur_price < last_ema) :
+            if (rsi_rising and cur_price < last_ema) : #or (rsi_cross and cur_price < last_ema) :
                 buy_attempts = 3
                 for i in range(buy_attempts):
                     try:
@@ -409,7 +410,7 @@ def trade_buy(ticker):
                         buyedmsg = f"매수 성공: {ticker} / 현재가 :{cur_price:,.2f} \n"
                         # buyedmsg += f"{srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} < {srsi_value_e} \n \n"
                         buyedmsg += f"{rsi_rising} rsi_rising >> {rsi_buy_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_buy_e} \n"
-                        buyedmsg += f"{rsi_cross} rsi_cross >> 0.35 < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < 0.45\n \n"
+                        # buyedmsg += f"{rsi_cross} rsi_cross >> 0.35 < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < 0.45\n \n"
                         print(buyedmsg)
                         send_discord_message(buyedmsg)
                         return buy_order
@@ -427,7 +428,7 @@ def trade_buy(ticker):
         buyFailmsg = f"[매수 실패]: {ticker} / 현재가: {cur_price:,.2f} \n"
         # buyFailmsg += f"{srsi_value_s} < srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} < {srsi_value_e} \n \n"
         buyFailmsg +=f"{rsi_buy_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_buy_e} \n"
-        buyFailmsg += f"{rsi_cross} rsi_cross >> 0.35 < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < 0.45 \n \n"
+        # buyFailmsg += f"{rsi_cross} rsi_cross >> 0.35 < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < 0.45 \n \n"
         
         print(buyFailmsg)
         send_discord_message(buyFailmsg)
@@ -446,7 +447,7 @@ def trade_sell(ticker):
     df_close = df['close'].values
 
     # bands_df = get_bollinger_bands(ticker, interval = min15)
-    bands_df = get_bollinger_bands(ticker, interval = min5, window=20, std_dev=3)
+    bands_df = get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2.5)
     up_Bol = bands_df['Upper_Band'].values
     count_upper_band = sum(1 for i in range(len(up_Bol)) if up_Bol[i] < df_close[i] )
     upper_boliinger = count_upper_band >= 1
@@ -464,11 +465,12 @@ def trade_sell(ticker):
     
     # UpRate = 0.95
     
-    # upper_price = (upper_boliinger and srsi_d[2] > UpRate)
-    upper_price = (upper_boliinger and rsi[-1] > UpRsiRate)
-    # middle_price15 = 0.5 <= srsi_d[2] <= 0.85 and srsi_k[1] > srsi_k[2]
+    # upper_price = (upper_boliinger or srsi_d[-1] > UpRate)
+    upper_price = rsi[-1] > UpRsiRate
+    # middle_price = 0.5 <= srsi_d[2] <= 0.85 and srsi_k[1] > srsi_k[2]
     middle_price = (rsi_sell_s <= rsi[-1] <= rsi_sell_e) and rsi[-2] > rsi[-1]
-    cut_price = middle_price or rsi[-1] > UpRsiRate
+    cut_price = middle_price or upper_price or upper_boliinger
+    # cut_price = middle_price or srsi_k[-1] > UpRsiRate
 
     max_attempts = sell_time
     attempts = 0
@@ -494,10 +496,11 @@ def trade_sell(ticker):
             while attempts < max_attempts:       
                 print(f"[{ticker}] / [매도시도 {attempts + 1} / {max_attempts}] / 수익률: {profit_rate:.2f}% / upper_price : {upper_price}")
 
-                if profit_rate >= max_rate or upper_price or middle_price:
+                if profit_rate >= max_rate or upper_boliinger or upper_price or middle_price:
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
                     sellmsg = f"[!!익절!!]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n"
                     sellmsg += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n"
+                    # sellmsg += f"upper_Bol: {upper_boliinger} / srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
 
                     print(sellmsg)
                     send_discord_message(sellmsg)
@@ -575,8 +578,8 @@ def send_profit_report():
                             ta_rsi = get_rsi(f"KRW-{ticker}", 14, interval = min5)
                             rsi = ta_rsi.values
                             
-                            ta_rsi9 = get_rsi(f"KRW-{ticker}", 9, interval = min5)
-                            rsi9 = ta_rsi9.values
+                            # ta_rsi9 = get_rsi(f"KRW-{ticker}", 9, interval = min5)
+                            # rsi9 = ta_rsi9.values
 
                             # stoch_Rsi7 = stoch_rsiS(f"KRW-{ticker}", interval=min5, window=7)
                             # srsi_k7 = stoch_Rsi7['%K'].values
@@ -593,7 +596,7 @@ def send_profit_report():
                             report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {buyed_amount:.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
                             report_message += f"srsi_d: {srsi_d[1]:,.3f} >> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} >> {srsi_k[2]:,.3f} \n"
                             report_message += f"rsi: {rsi[-2]:,.3f} >> {rsi[-1]:,.3f} \n"
-                            report_message += f"rsi9: {rsi9[-2]:,.3f} >> {rsi9[-1]:,.3f} \n"
+                            # report_message += f"rsi9: {rsi9[-2]:,.3f} >> {rsi9[-1]:,.3f} \n"
                     
                         else:
                             report_message += "RSI 데이터가 충분하지 않습니다.\n"
