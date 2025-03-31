@@ -25,19 +25,24 @@ def send_discord_message(msg):
 
 count_200 = 200
 
-min15 = "minute15"
+# min15 = "minute15"
 min5 = "minute5"
-srsi_value_s = 0.1
-srsi_value_e = 0.7
+# srsi_value_s = 0.1
+# srsi_value_e = 0.7
 
 rsi_buy_s = 0.25
-rsi_buy_e = 0.3
+rsi_buy_e = 0.35
 
-middle_price_rate = 0.9
-band_diff_margin = 0.017
+# middle_price_rate = 0.9
+band_diff_margin = 0.02
 
 # srsi_15_k_s = 0
 # srsi_15_k_e = 0.5
+
+UpRsiRate = 0.55
+
+rsi_sell_s = 0.5
+rsi_sell_e = 0.6
 
 def get_user_input():
     while True:
@@ -56,8 +61,7 @@ min_rate, max_rate, sell_time = get_user_input()
 
 second = 1.0
 min_krw = 50_000
-cut_rate1 = -1.0
-cut_rate2 = -3.0
+cut_rate = -3.0
 
 def get_balance(ticker):
     try:
@@ -221,30 +225,30 @@ def filtered_tickers(tickers):
             
             ta_rsi9 = get_rsi(t, 9, interval = min5)
             rsi9 = ta_rsi9.values
-            rsi_cross = rsi9[-2] >= rsi[-2]  and rsi9[-2] < rsi[-1] and 0.35 < rsi9[-1] < 0.45
+            rsi_cross = rsi9[-2] >= rsi[-2]  and rsi9[-2] < rsi[-1] and rsi_buy_s < rsi9[-1] < rsi_buy_e
 
             filteringTime = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
             filtering_message += f"[cond1: {is_increasing_5}] band_diff: {band_diff[-1]} > {band_diff_margin} \n"
             # filtering_message += f"[cond2: {low_boliinger15}] LB15: {lower_band15[-1]:,.2f} or ema15: {last_ema15:,.2f} > df15_close: {df15_close[-1]:,.2f} \n"
-            filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-3]:,.2f} >> {lower_band[-2]:,.2f} >> {lower_band[-1]:,.2f} \n"
+            filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-1]:,.2f} or ema15: {last_ema5:,.2f} > df15_close: {df_close[-1]:,.2f} \n"
             # filtering_message += f"[cond4: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
             # filtering_message += f"[cond5: {srsi_d_risingS15}] {srsi_15_k_s} < srsi_k15: {srsi_kS15[-2]:,.2f} >> {srsi_kS15[-1]:,.2f} < {srsi_15_k_e} / srsi_d15: {srsi_dS15[-2]:,.2f} >> {srsi_dS15[-1]:,.2f} \n"
             filtering_message += f"[cond6: {red_candle}] df_open: {df_open[-1]:,.2f} < df_close: {df_close[-1]:,.2f} \n"
             filtering_message += f"[cond7: {rsi_rising}] {rsi_buy_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_buy_e} \n"
-            filtering_message += f"[cond8: {rsi_cross}] 0.35 < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < 0.45 \n"
+            filtering_message += f"[cond8: {rsi_cross}] {rsi_buy_s} < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < {rsi_buy_e} \n"
             # filtering_message += f"[cond7: {srsi_cross}] {srsi_value_s} < srsi_d:k_2: {srsi_dS[-2]:,.2f} >= {srsi_kS[-2]:,.2f} >> srsi_d:k_1: {srsi_dS[-1]:,.2f} < {srsi_kS[-1]:,.2f} < {srsi_value_e} \n"
 
-            print(filtering_message)
+            # print(filtering_message)
             if is_increasing_5 :
-                # print(filtering_message)
+                print(filtering_message)
                 # send_discord_message(filtering_message)
                                     
                 # if low_boliinger15 :
                 #     print(filtering_message)
                 #     send_discord_message(filtering_message)
 
-                    if low_boliinger :
+                if low_boliinger :
                         # print(filtering_message)
                         # send_discord_message(filtering_message)
                             
@@ -387,7 +391,7 @@ def trade_buy(ticker):
     rsi9 = ta_rsi9.values
     
     rsi_rising = rsi[-2] < rsi[-1] and rsi_buy_s < rsi[-1] < rsi_buy_e
-    rsi_cross = rsi9[-2] >= rsi[-2]  and rsi9[-2] < rsi[-1] and 0.35 < rsi9[-1] < 0.45
+    rsi_cross = rsi9[-2] >= rsi[-2]  and rsi9[-2] < rsi[-1] and rsi_buy_s < rsi9[-1] < rsi_buy_e
     
     last_ema = get_ema(ticker, interval = min5).iloc[-1]
 
@@ -437,7 +441,7 @@ def trade_sell(ticker):
     cur_price = pyupbit.get_current_price(ticker)
     profit_rate = (cur_price - avg_buy_price) / avg_buy_price * 100 if avg_buy_price > 0 else 0  # 수익률 계산
 
-    df = pyupbit.get_ohlcv(ticker, interval = min15, count = 6)
+    df = pyupbit.get_ohlcv(ticker, interval = min5, count = 6)
     time.sleep(second)
     df_close = df['close'].values
 
@@ -459,12 +463,11 @@ def trade_sell(ticker):
     # srsi_d15 = stoch_Rsi15['%D'].values
     
     # UpRate = 0.95
-    UpRsiRate = 0.55
     
     # upper_price = (upper_boliinger and srsi_d[2] > UpRate)
     upper_price = (upper_boliinger and rsi[-1] > UpRsiRate)
     # middle_price15 = 0.5 <= srsi_d[2] <= 0.85 and srsi_k[1] > srsi_k[2]
-    middle_price = (0.5 <= rsi[-1] <= 0.6) and rsi[-2] > rsi[-1]
+    middle_price = (rsi_sell_s <= rsi[-1] <= rsi_sell_e) and rsi[-2] > rsi[-1]
     cut_price = middle_price or rsi[-1] > UpRsiRate
 
     max_attempts = sell_time
@@ -479,7 +482,7 @@ def trade_sell(ticker):
             sell_order = upbit.sell_market_order(ticker, buyed_amount)
             cutTimemsg = f"[장시작전매도]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
             # cutTimemsg += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} > srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
-            cutTimemsg += f"rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} \n"
+            cutTimemsg += f" {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e}  \n"
             print(cutTimemsg)
             send_discord_message(cutTimemsg)
         else:
@@ -494,7 +497,8 @@ def trade_sell(ticker):
                 if profit_rate >= max_rate or upper_price or middle_price:
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
                     sellmsg = f"[!!익절!!]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n"
-                    sellmsg += f"upper_Bol: {upper_boliinger} / 0.5 < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < 0.6 \n \n"
+                    sellmsg += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n"
+
                     print(sellmsg)
                     send_discord_message(sellmsg)
                     return sell_order
@@ -516,21 +520,23 @@ def trade_sell(ticker):
             #     send_discord_message(mpricefailmsg)
             #     return None
         else:
-            if profit_rate < cut_rate1:
+            if profit_rate < cut_rate:
                 if cut_price:
                     sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                    cut_message = f"[손절_CutRate_1%]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
+                    cut_message = f"[손절_CutRate_3%]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
                     # cut_message += f"srsi_d: {srsi_d[1]:,.2f} >> {srsi_d[2]:,.2f} < srsi_k: {srsi_k[1]:,.2f} >> {srsi_k[2]:,.2f} \n \n"
-                    cut_message += f"rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} \n"
+                    cut_message += f" {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e}  \n"
+                    
                     print(cut_message)
                     send_discord_message(cut_message)
             
-            elif profit_rate < cut_rate2:
-                sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                cut_message2 = f"[손절_CutRate_3%]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
-                cut_message2 += f"srsi_d: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} \n" 
-                print(cut_message2)
-                send_discord_message(cut_message2)
+            # elif profit_rate < cut_rate2:
+            #     sell_order = upbit.sell_market_order(ticker, buyed_amount)
+            #     cut_message2 = f"[손절_CutRate_3%]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
+            #     # cut_message2 += f"srsi_d: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} \n" 
+            #     cut_message2 += f"{rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e}  \n" 
+            #     print(cut_message2)
+            #     send_discord_message(cut_message2)
             else:
                 return None  
 
@@ -608,7 +614,7 @@ def send_profit_report():
             
 trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
 trade_msg = f'{trade_start} trading start \n'
-trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 Rsi: {rsi_buy_s} ~ {rsi_buy_e} / 손절: {cut_rate1}% ~ {cut_rate2}% / \n'    #srsiD: {srsi_value_s} ~ {srsi_value_e}
+trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 Rsi: {rsi_buy_s} ~ {rsi_buy_e} / 손절: {cut_rate}% \n'    #srsiD: {srsi_value_s} ~ {srsi_value_e}
 
 print(trade_msg)
 send_discord_message(trade_msg)
