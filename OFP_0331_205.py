@@ -257,13 +257,14 @@ def filtered_tickers(tickers):
                     # print(filtering_message)
 
                     if low_band_slope_decreasing :
-                        print(filtering_message)
-                        send_discord_message(filtering_message)
+                        # print(filtering_message)
+                        # send_discord_message(filtering_message)
 
                         if rsi_rising:
-                            filtered_tickers.append(t)
                             # print(filtering_message)
-                            # send_discord_message(filtering_message)
+                            send_discord_message(filtering_message)
+                            filtered_tickers.append(t)
+                            
 
                         # if srsi_rising :
                         # send_discord_message(filtering_message)
@@ -297,7 +298,7 @@ def filtered_tickers(tickers):
     return filtered_tickers
 
 def get_best_ticker():
-    selected_tickers = ["KRW-ETH", "KRW-BTC", "KRW-XRP", "KRW-SOL", "KRW-ADA", "KRW-HBAR", "KRW-XLM", "KRW-DOGE"]  #"KRW-BTC", 
+    selected_tickers = ["KRW-ETH", "KRW-XRP", "KRW-SOL", "KRW-ADA", "KRW-HBAR", "KRW-XLM", "KRW-DOGE"]  #"KRW-BTC", 
     # excluded_tickers = ["KRW-QI", "KRW-ONX", "KRW-ETHF", "KRW-ETHW", "KRW-PURSE", "KRW-USDT", "KRW-BERA", "KRW-VTHO", "KRW-SBD", "KRW-JTO", "KRW-SCR", "KRW-VIRTUAL", "KRW-SOLVE", "KRW-IOST", "KRW-HIFI", "KRW-WAL", "KRW-ORCA", "KRW-CRO", "KRW-LOOM", "KRW-ARKM", "KRW-KAITO", "KRW-COW", "KRW-TRUMP"]  # 제외할 코인 리스트
     balances = upbit.get_balances()
     held_coins = []
