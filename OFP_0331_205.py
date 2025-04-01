@@ -30,8 +30,8 @@ min5 = "minute5"
 # srsi_value_s = 0.1
 # srsi_value_e = 0.4
 
-rsi_buy_s = 0.2
-rsi_buy_e = 0.4
+rsi_buy_s = 20
+rsi_buy_e = 40
 
 # middle_price_rate = 0.9
 band_diff_margin = 0.02
@@ -39,10 +39,10 @@ band_diff_margin = 0.02
 # srsi_15_k_s = 0
 # srsi_15_k_e = 0.5
 
-UpRsiRate = 0.65
+UpRsiRate = 65
 
-rsi_sell_s = 0.5
-rsi_sell_e = 0.65
+rsi_sell_s = 50
+rsi_sell_e = 65
 
 def get_user_input():
     while True:
@@ -246,7 +246,7 @@ def filtered_tickers(tickers):
 
             # print(filtering_message)
             if is_increasing_5 :
-                print(filtering_message)
+                # print(filtering_message)
                 # send_discord_message(filtering_message)
                                     
                 # if low_boliinger15 :
@@ -257,7 +257,7 @@ def filtered_tickers(tickers):
                     # print(filtering_message)
 
                     if low_band_slope_decreasing :
-                        # print(filtering_message)
+                        print(filtering_message)
                         send_discord_message(filtering_message)
 
                         if rsi_rising:
