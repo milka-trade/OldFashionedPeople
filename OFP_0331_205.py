@@ -146,7 +146,7 @@ def get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2.5):
         'Lower_Band': lower_band
     })
 
-    return bands_df.tail(6)
+    return bands_df.tail(4)
 
 def filtered_tickers(tickers):
     """특정 조건에 맞는 티커 필터링"""
@@ -154,7 +154,7 @@ def filtered_tickers(tickers):
     
     for t in tickers:
         try:
-            df = pyupbit.get_ohlcv(t, interval=min5, count=6)
+            df = pyupbit.get_ohlcv(t, interval=min5, count=4)
             if df is None:
                 print(f"[filter_tickers] 데이터를 가져올 수 없습니다. {t}")
                 send_discord_message(f"[filter_tickers] 데이터를 가져올 수 없습니다: {t}")
@@ -186,8 +186,9 @@ def filtered_tickers(tickers):
             # band_diff15 = (upper_band15 - lower_band15) / lower_band15
 
             # band_diff_margin = 0.03
+            average_band_diff_rate = 1.05
 
-            is_increasing_5 = band_diff[-1] > average_band_diff * 1.1
+            is_increasing_5 = band_diff[-1] > average_band_diff * average_band_diff_rate
             # is_increasing_5 = average_band_diff[-1] > average_band_diff[-4] * 1.1
             # is_increasing_15 = band_diff15[-1] > band_diff_15_margin
             
@@ -231,21 +232,21 @@ def filtered_tickers(tickers):
 
             filteringTime = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
-            filtering_message += f"[cond1: {is_increasing_5}] band_diff: {band_diff[-1]:,.4f} > {average_band_diff:,.4f} \n"
+            filtering_message += f"[cond1: {is_increasing_5}] band_diff: {band_diff[-1]:,.4f} > {average_band_diff:,.4f} / average * {average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f}\n"
             # filtering_message += f"[cond1: {is_increasing_5}] average_band_diff: {average_band_diff[-1]} > {average_band_diff[-4]} > {average_band_diff[-5]} \n"
             # average_band_diff[-1]
             # filtering_message += f"[cond2: {low_boliinger15}] LB15: {lower_band15[-1]:,.2f} or ema15: {last_ema15:,.2f} > df15_close: {df15_close[-1]:,.2f} \n"
             filtering_message += f"[cond2: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
-            filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-1]:,.2f} or ema15: {last_ema5:,.2f} > df15_close: {df_close[-1]:,.2f} \n"
+            filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-1]:,.2f} or ema5: {last_ema5:,.2f} > df_close: {df_close[-1]:,.2f} \n"
             # filtering_message += f"[cond6: {red_candle}] df_open: {df_open[-1]:,.2f} < df_close: {df_close[-1]:,.2f} \n"
-            filtering_message += f"[cond4: {rsi_rising}] {rsi_buy_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_buy_e} \n"
+            filtering_message += f"[cond4: {rsi_rising}] {rsi_buy_s} > rsi: {rsi[-3]:,.2f} >> {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} << > {rsi_buy_e} \n"
             # filtering_message += f"[cond5: {srsi_rising}] {srsi_value_s} < srsi_k: {srsi_kS[-2]:,.2f} >> {srsi_kS[-1]:,.2f} < {srsi_value_e} \n"  #/ srsi_d: {srsi_dS[-2]:,.2f} >> {srsi_dS[-1]:,.2f}
             # filtering_message += f"[cond8: {rsi_cross}] {rsi_buy_s} < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < {rsi_buy_e} \n"
             # filtering_message += f"[cond7: {srsi_cross}] {srsi_value_s} < srsi_d:k_2: {srsi_dS[-2]:,.2f} >= {srsi_kS[-2]:,.2f} >> srsi_d:k_1: {srsi_dS[-1]:,.2f} < {srsi_kS[-1]:,.2f} < {srsi_value_e} \n"
 
-            print(filtering_message)
+            # print(filtering_message)
             if is_increasing_5 :
-                # print(filtering_message)
+                print(filtering_message)
                 # send_discord_message(filtering_message)
                                     
                 # if low_boliinger15 :
@@ -454,7 +455,7 @@ def trade_sell(ticker):
     cur_price = pyupbit.get_current_price(ticker)
     profit_rate = (cur_price - avg_buy_price) / avg_buy_price * 100 if avg_buy_price > 0 else 0  # 수익률 계산
 
-    df = pyupbit.get_ohlcv(ticker, interval = min5, count = 6)
+    df = pyupbit.get_ohlcv(ticker, interval = min5, count = 4)
     time.sleep(second)
     df_close = df['close'].values
 
