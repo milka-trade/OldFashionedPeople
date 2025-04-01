@@ -25,21 +25,21 @@ def send_discord_message(msg):
 
 count_200 = 200
 
-min15 = "minute15"
+# min15 = "minute15"
 min5 = "minute5"
-srsi_value_s = 0.1
-srsi_value_e = 0.4
+# srsi_value_s = 0.1
+# srsi_value_e = 0.4
 
-rsi_buy_s = 0.25
+rsi_buy_s = 0.2
 rsi_buy_e = 0.4
 
 # middle_price_rate = 0.9
-band_diff_margin = 0.015
+band_diff_margin = 0.02
 
 # srsi_15_k_s = 0
 # srsi_15_k_e = 0.5
 
-UpRsiRate = 0.7
+UpRsiRate = 0.65
 
 rsi_sell_s = 0.5
 rsi_sell_e = 0.65
@@ -154,7 +154,7 @@ def filtered_tickers(tickers):
     
     for t in tickers:
         try:
-            df = pyupbit.get_ohlcv(t, interval=min15, count=6)
+            df = pyupbit.get_ohlcv(t, interval=min5, count=6)
             if df is None:
                 print(f"[filter_tickers] 데이터를 가져올 수 없습니다. {t}")
                 send_discord_message(f"[filter_tickers] 데이터를 가져올 수 없습니다: {t}")
@@ -173,10 +173,12 @@ def filtered_tickers(tickers):
             df_close = df['close'].values
             
             # bands_df = get_bollinger_bands(t, interval = min5)
-            bands_df = get_bollinger_bands(t, interval = min15, window=20, std_dev=3)
+            bands_df = get_bollinger_bands(t, interval = min5, window=20, std_dev=2.5)
             upper_band = bands_df['Upper_Band'].values
             lower_band = bands_df['Lower_Band'].values
             band_diff = (upper_band - lower_band) / lower_band
+
+            average_band_diff = np.mean(band_diff)
 
             # bands_df15 = get_bollinger_bands(t, interval = min15)
             # upper_band15 = bands_df15['Upper_Band'].values
@@ -185,10 +187,11 @@ def filtered_tickers(tickers):
 
             # band_diff_margin = 0.03
 
-            is_increasing_5 = band_diff[-1] > band_diff_margin
+            is_increasing_5 = band_diff[-1] > average_band_diff * 1.1
+            # is_increasing_5 = average_band_diff[-1] > average_band_diff[-4] * 1.1
             # is_increasing_15 = band_diff15[-1] > band_diff_15_margin
             
-            last_ema5 = get_ema(t, interval = min15).iloc[-1]
+            last_ema5 = get_ema(t, interval = min5).iloc[-1]
             # last_ema15 = get_ema(t, interval = min15).iloc[-1]
 
             count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_close[i] < min(lower_band[i]  * 1.005, last_ema5))
@@ -218,7 +221,7 @@ def filtered_tickers(tickers):
             
             # srsi_d_risingS15 = srsi_kS15[-2] < srsi_kS15[-1] and srsi_15_k_s < srsi_kS15[-1] < srsi_15_k_e  #srsi_dS[-1] < srsi_kS[-1] and (srsi_value_s <= srsi_dS[-1] <= srsi_value_e) and (
                 
-            ta_rsi = get_rsi(t, 14, interval = min15)
+            ta_rsi = get_rsi(t, 14, interval = min5)
             rsi = ta_rsi.values
             rsi_rising = rsi[-2] < rsi[-1] and rsi_buy_s < rsi[-1] < rsi_buy_e
             
@@ -228,7 +231,9 @@ def filtered_tickers(tickers):
 
             filteringTime = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
-            filtering_message += f"[cond1: {is_increasing_5}] band_diff: {band_diff[-1]} > {band_diff_margin} \n"
+            filtering_message += f"[cond1: {is_increasing_5}] band_diff: {band_diff[-1]:,.4f} > {average_band_diff:,.4f} \n"
+            # filtering_message += f"[cond1: {is_increasing_5}] average_band_diff: {average_band_diff[-1]} > {average_band_diff[-4]} > {average_band_diff[-5]} \n"
+            # average_band_diff[-1]
             # filtering_message += f"[cond2: {low_boliinger15}] LB15: {lower_band15[-1]:,.2f} or ema15: {last_ema15:,.2f} > df15_close: {df15_close[-1]:,.2f} \n"
             filtering_message += f"[cond2: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
             filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-1]:,.2f} or ema15: {last_ema5:,.2f} > df15_close: {df_close[-1]:,.2f} \n"
@@ -238,7 +243,7 @@ def filtered_tickers(tickers):
             # filtering_message += f"[cond8: {rsi_cross}] {rsi_buy_s} < rsi9:14_2: {rsi9[-2]:,.2f} >= {rsi[-2]:,.2f} / rsi9:14_1: {rsi9[-1]:,.2f} >= {rsi[-1]:,.2f} < {rsi_buy_e} \n"
             # filtering_message += f"[cond7: {srsi_cross}] {srsi_value_s} < srsi_d:k_2: {srsi_dS[-2]:,.2f} >= {srsi_kS[-2]:,.2f} >> srsi_d:k_1: {srsi_dS[-1]:,.2f} < {srsi_kS[-1]:,.2f} < {srsi_value_e} \n"
 
-            # print(filtering_message)
+            print(filtering_message)
             if is_increasing_5 :
                 # print(filtering_message)
                 # send_discord_message(filtering_message)
@@ -248,7 +253,7 @@ def filtered_tickers(tickers):
                 #     send_discord_message(filtering_message)
                             
                 if low_boliinger :
-                    print(filtering_message)
+                    # print(filtering_message)
 
                     if low_band_slope_decreasing :
                         # print(filtering_message)
@@ -353,7 +358,7 @@ def get_best_ticker():
 
     for ticker in filtered_list:   # 조회할 코인 필터링
         
-        ta_rsi = get_rsi(ticker, 14, interval = min15)
+        ta_rsi = get_rsi(ticker, 14, interval = min5)
         rsi = ta_rsi.values
         # rsi_rising = rsi[-2] < rsi[-1] and rsi_buy_s < rsi[-1] < rsi_buy_e
             
@@ -391,7 +396,7 @@ def trade_buy(ticker):
     # srsi_d = stoch_Rsi['%D'].values
     # srsi_buy = (srsi_value_s <= srsi_k[-1] <= srsi_value_e) and srsi_k[-2] < srsi_k[-1]
     
-    ta_rsi = get_rsi(ticker, 14, interval = min15)
+    ta_rsi = get_rsi(ticker, 14, interval = min5)
     rsi = ta_rsi.values
     
     # ta_rsi9 = get_rsi(ticker, 9, interval = min5)
@@ -400,7 +405,7 @@ def trade_buy(ticker):
     rsi_rising = rsi[-2] < rsi[-1] and rsi_buy_s < rsi[-1] < rsi_buy_e
     # rsi_cross = rsi9[-2] >= rsi[-2]  and rsi9[-2] < rsi[-1] and rsi_buy_s < rsi9[-1] < rsi_buy_e
     
-    last_ema = get_ema(ticker, interval = min15).iloc[-1]
+    last_ema = get_ema(ticker, interval = min5).iloc[-1]
 
     if krw >= min_krw :
         while attempt < max_retries:
@@ -578,9 +583,9 @@ def send_profit_report():
                             cur_price = pyupbit.get_current_price(f"KRW-{ticker}")
                             profit_rate = (cur_price - avg_buy_price) / avg_buy_price * 100 if avg_buy_price > 0 else 0
 
-                            stoch_Rsi14 = stoch_rsiS(f"KRW-{ticker}", interval=min5, window=14)
-                            srsi_k = stoch_Rsi14['%K'].values
-                            srsi_d = stoch_Rsi14['%D'].values
+                            # stoch_Rsi14 = stoch_rsiS(f"KRW-{ticker}", interval=min5, window=14)
+                            # srsi_k = stoch_Rsi14['%K'].values
+                            # srsi_d = stoch_Rsi14['%D'].values
                             
                             ta_rsi = get_rsi(f"KRW-{ticker}", 14, interval = min5)
                             rsi = ta_rsi.values
@@ -601,7 +606,7 @@ def send_profit_report():
                             # srsi_d15_14 = stoch_Rsi15_14['%D'].values
 
                             report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {buyed_amount:.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
-                            report_message += f"srsi_d: {srsi_d[1]:,.3f} >> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} >> {srsi_k[2]:,.3f} \n"
+                            # report_message += f"srsi_d: {srsi_d[1]:,.3f} >> {srsi_d[2]:,.3f} / srsi_k: {srsi_k[1]:,.3f} >> {srsi_k[2]:,.3f} \n"
                             report_message += f"rsi: {rsi[-2]:,.3f} >> {rsi[-1]:,.3f} \n"
                             # report_message += f"rsi9: {rsi9[-2]:,.3f} >> {rsi9[-1]:,.3f} \n"
                     
