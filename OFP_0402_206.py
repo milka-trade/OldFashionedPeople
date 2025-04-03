@@ -28,9 +28,9 @@ count_200 = 200
 min5 = "minute5"
 
 rsi_buy_s = 25
-rsi_buy_e = 40
+rsi_buy_e = 35
 
-band_diff_margin = 0.015
+band_diff_margin = 0.025
 average_band_diff_rate = 1.05
 
 UpRsiRate = 65
@@ -55,7 +55,7 @@ min_rate, max_rate, sell_time = get_user_input()
 
 second = 1.0
 min_krw = 50_000
-cut_rate = -3.0
+cut_rate = -5.0
 
 def get_balance(ticker):
     try:
@@ -438,9 +438,18 @@ def send_profit_report():
                             ta_rsi = get_rsi(f"KRW-{ticker}", 14, interval = min5)
                             rsi = ta_rsi.values
 
-                            report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 보유량: {buyed_amount:.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
-                            report_message += f"rsi: {rsi[-2]:,.3f} >> {rsi[-1]:,.3f} \n"
-                    
+                            bands_df = get_bollinger_bands(f"KRW-{ticker}", interval = min5, window=20, std_dev=2.5)
+                            upper_band = bands_df['Upper_Band'].values
+                            lower_band = bands_df['Lower_Band'].values
+                            band_diff = (upper_band - lower_band) / lower_band
+
+                            slopes = np.diff(lower_band)
+
+                            report_message += f"[{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.2f} / 평균 매수 가격: {avg_buy_price:.2f} \n"
+                            report_message += f"Band_diff: {band_diff[-3]:,.3f} >> {band_diff[-2]:,.3f} >> {band_diff[-1]:,.3f} \n"
+                            report_message += f"Slope: {slopes[-3]:,.3f} >> {slopes[-2]:,.3f} >> {slopes[-1]:,.3f} \n"
+                            report_message += f"RSI: {rsi[-3]:,.3f} >> {rsi[-2]:,.3f} >> {rsi[-1]:,.3f} \n"
+                                                
                         else:
                             report_message += "RSI 데이터가 충분하지 않습니다.\n"
                 send_discord_message(report_message)
@@ -462,7 +471,7 @@ def send_profit_report():
             
 trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
 trade_msg = f'{trade_start} trading start \n'
-trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 RsiBuy: {rsi_buy_s} ~ {rsi_buy_e} / RsiSell: {rsi_sell_s} ~ {rsi_sell_e} / 손절: {cut_rate}% \n'  #/ SrsiBuy: {srsi_value_s} ~ {srsi_value_e} 
+trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 / Ban_diff: {band_diff_margin} / RsiBuy: {rsi_buy_s} ~ {rsi_buy_e} / RsiSell: {rsi_sell_s} ~ {rsi_sell_e} / 손절: {cut_rate}% \n'
 
 print(trade_msg)
 send_discord_message(trade_msg)
