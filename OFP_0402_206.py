@@ -30,13 +30,13 @@ min5 = "minute5"
 rsi_buy_s = 25
 rsi_buy_e = 35
 
-band_diff_margin = 0.025
+band_diff_margin = 0.03
 average_band_diff_rate = 1.05
 
-UpRsiRate = 65
-
 rsi_sell_s = 45
-rsi_sell_e = 65
+rsi_sell_e = 70
+
+UpRsiRate = 70
 
 def get_user_input():
     while True:
