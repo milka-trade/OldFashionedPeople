@@ -27,10 +27,11 @@ count_200 = 200
 
 min5 = "minute5"
 
-rsi_buy_s = 20
+rsi_buy_s = 25
 rsi_buy_e = 40
 
-band_diff_margin = 0.02
+band_diff_margin = 0.015
+average_band_diff_rate = 1.05
 
 UpRsiRate = 65
 
@@ -154,8 +155,6 @@ def filtered_tickers(tickers):
                 continue  # 다음 티커로 넘어감
             time.sleep(second)
             df_close = df['close'].values
-
-            df_close = df['close'].values
             
             bands_df = get_bollinger_bands(t, interval = min5, window=20, std_dev=2.5)
             upper_band = bands_df['Upper_Band'].values
@@ -163,7 +162,6 @@ def filtered_tickers(tickers):
             band_diff = (upper_band - lower_band) / lower_band
 
             average_band_diff = np.mean(band_diff)
-            average_band_diff_rate = 1.05
 
             is_increasing_5 = band_diff[-1] > max(band_diff_margin, average_band_diff * average_band_diff_rate)
             
@@ -183,7 +181,7 @@ def filtered_tickers(tickers):
         
             filteringTime = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
-            filtering_message += f"[cond1: {is_increasing_5}] band_diff: {band_diff[-1]:,.4f} > {average_band_diff:,.4f} / average * {average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f}\n"
+            filtering_message += f"[cond1: {is_increasing_5}] band_diff: {band_diff[-1]:,.4f} > average*{average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f} / band_diff_margin: {band_diff_margin} \n"
             # filtering_message += f"[cond1: {is_increasing_5}] average_band_diff: {average_band_diff[-1]} > {average_band_diff[-4]} > {average_band_diff[-5]} \n"
             # filtering_message += f"[cond2: {low_boliinger15}] LB15: {lower_band15[-1]:,.2f} or ema15: {last_ema15:,.2f} > df15_close: {df15_close[-1]:,.2f} \n"
             filtering_message += f"[cond2: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
@@ -191,9 +189,9 @@ def filtered_tickers(tickers):
             # filtering_message += f"[cond6: {red_candle}] df_open: {df_open[-1]:,.2f} < df_close: {df_close[-1]:,.2f} \n"
             filtering_message += f"[cond4: {rsi_rising}] {rsi_buy_s} > rsi: {rsi[-3]:,.2f} >> {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} << > {rsi_buy_e} \n"
 
-            print(filtering_message)
+            # print(filtering_message)
             if is_increasing_5 :
-                # print(filtering_message)
+                print(filtering_message)
                 # send_discord_message(filtering_message)
                                     
                 # if low_boliinger15 :
