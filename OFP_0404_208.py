@@ -31,20 +31,20 @@ min15 = "minute15"
 rsi_buy_s = 25
 rsi_buy_e = 35
 
-band_diff_margin = 0.05
+band_diff_margin = 0.065
 average_band_diff_rate = 1.05
 
-rsi_sell_s = 55
+rsi_sell_s = 60
 rsi_sell_e = 70
 
-UpRsiRate = 70
+UpRsiRate = 75
 
 def get_user_input():
     while True:
         try:
             min_rate = float(input("최소 수익률 (예: 0.15): "))
-            max_rate = float(input("최대 수익률 (예: 1.0): "))
-            sell_time = int(input("매도감시횟수 (예: 200): "))
+            max_rate = float(input("최대 수익률 (예: 0.85): "))
+            sell_time = int(input("매도감시횟수 (예: 30): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
@@ -193,7 +193,7 @@ def get_best_ticker():
             held_coins.append(ticker)  # "KRW-코인명" 형태로 추가
     
     try:
-        df_criteria = pyupbit.get_ohlcv("KRW-XLM", interval="day", count=1)
+        df_criteria = pyupbit.get_ohlcv("KRW-ADA", interval="day", count=1)
         time.sleep(0.1)
         krw_cri_day_value = df_criteria['value'].iloc[-1]  # KRW-SOL의 당일 거래량
 
