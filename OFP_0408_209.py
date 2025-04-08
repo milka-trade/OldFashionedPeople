@@ -113,7 +113,7 @@ def get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2.5):
 
     return bands_df.tail(4)
 
-def find_best_bollinger_ratio(ticker, ratios=[i / 100 for i in range(3, 11)], window=20, std_dev=2.5):
+def find_best_bollinger_ratio(ticker, ratios=[i / 100 for i in range(6, 11)], window=20, std_dev=2.5):
     """
     특정 암호화폐에 대해 볼린저 밴드 비율을 0.03~0.1까지 적용하여
     가장 높은 수익률을 내는 볼린저 밴드 비율을 리턴하는 함수.
@@ -207,7 +207,7 @@ def filtered_tickers(tickers):
             print(f"{t} / best_BD_ratio: {best_BD_ratio:,.4f}")
             average_band_diff = np.mean(band_diff)
 
-            is_increasing = band_diff[-1] > max(band_diff_margin, average_band_diff * average_band_diff_rate)
+            is_increasing = band_diff[-1] > max(best_BD_ratio, average_band_diff * average_band_diff_rate)
             
             last_ema = get_ema(t, interval = min5).iloc[-1]
 
@@ -225,7 +225,7 @@ def filtered_tickers(tickers):
         
             filteringTime = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
-            filtering_message += f"[cond1: {is_increasing}] band_diff: {band_diff[-1]:,.4f} > average*{average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f} / band_diff_margin: {band_diff_margin} \n"
+            filtering_message += f"[cond1: {is_increasing}] band_diff: {band_diff[-1]:,.4f} > average*{average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f} / best_BD_ratio: {best_BD_ratio:,.4f} \n"
             filtering_message += f"[cond2: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
             filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-1]:,.2f} or ema: {last_ema:,.2f} > df_low15: {df_low[-1]:,.2f} \n"
             filtering_message += f"[cond4: {rsi_rising}] {rsi_buy_s} > rsi: {rsi[-3]:,.2f} >> {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} << > {rsi_buy_e} \n"
