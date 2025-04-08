@@ -96,7 +96,7 @@ def get_rsi(ticker, period, interval=min5):
 
 def get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2.5):
     """특정 티커의 볼린저 밴드 상단 및 하단값을 가져오는 함수"""
-    df = pyupbit.get_ohlcv(ticker, interval=interval, count=count_200)
+    df = pyupbit.get_ohlcv(ticker, interval=interval, count=50)
     time.sleep(second)
     if df is None or df.empty:
         return None  # 데이터가 없으면 None 반환
