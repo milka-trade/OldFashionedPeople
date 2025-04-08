@@ -32,7 +32,7 @@ rsi_buy_s = 25
 rsi_buy_e = 35
 
 band_diff_margin = 0.065
-average_band_diff_rate = 1.05
+average_band_diff_rate = 1.1
 
 rsi_sell_s = 60
 rsi_sell_e = 70
@@ -113,7 +113,7 @@ def get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2.5):
 
     return bands_df.tail(4)
 
-def find_best_bollinger_ratio(ticker, ratios=[i / 100 for i in range(6, 11)], window=20, std_dev=2.5):
+def find_best_bollinger_ratio(ticker, ratios=[i / 100 for i in range(3, 11)], window=20, std_dev=2.5):
     """
     특정 암호화폐에 대해 볼린저 밴드 비율을 0.03~0.1까지 적용하여
     가장 높은 수익률을 내는 볼린저 밴드 비율을 리턴하는 함수.
@@ -204,7 +204,7 @@ def filtered_tickers(tickers):
             band_diff = (upper_band - lower_band) / lower_band
 
             best_BD_ratio = find_best_bollinger_ratio(t)
-            print(f"{t} / best_BD_ratio: {best_BD_ratio:,.4f}")
+            # print(f"{t} / best_BD_ratio: {best_BD_ratio:,.4f}")
             average_band_diff = np.mean(band_diff)
 
             is_increasing = band_diff[-1] > max(best_BD_ratio, average_band_diff * average_band_diff_rate)
