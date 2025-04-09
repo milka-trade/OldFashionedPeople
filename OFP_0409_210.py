@@ -43,8 +43,8 @@ def get_user_input():
     while True:
         try:
             min_rate = float(input("최소 수익률 (예: 0.3): "))
-            max_rate = float(input("최대 수익률 (예: 1.2): "))
-            sell_time = int(input("매도감시횟수 (예: 20): "))
+            max_rate = float(input("최대 수익률 (예: 1.3): "))
+            sell_time = int(input("매도감시횟수 (예: 30): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
@@ -128,7 +128,7 @@ def find_best_bollinger_ratio(ticker, ratios=[i / 100 for i in range(6, 11)], wi
         float: 최적 볼린저 밴드 비율 또는 None (데이터 가져오기 실패 시).
     """
 
-    df = pyupbit.get_ohlcv(ticker, interval=min15, count=count_200)  # 5분봉 데이터
+    df = pyupbit.get_ohlcv(ticker, interval="minute60", count=count_200)  # 5분봉 데이터
     if df is None or df.empty:
         return None
 
