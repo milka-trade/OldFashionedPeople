@@ -163,7 +163,7 @@ def find_best_bollinger_ratio(ticker, ratios=[i / 100 for i in range(6, 11)], wi
                     buy_price = df['open'].iloc[i + 1]
 
                     # 1.5% 수익률 목표 설정
-                    sell_target_price = buy_price * 1.015
+                    sell_target_price = buy_price * 1.003
                     
                     # 매도 조건 확인: 다음 봉부터 목표가 도달 여부 확인
                     for j in range(i + 1, len(df)):
