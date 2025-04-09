@@ -128,7 +128,7 @@ def find_best_bollinger_ratio(ticker, ratios=[i / 100 for i in range(6, 11)], wi
         float: 최적 볼린저 밴드 비율 또는 None (데이터 가져오기 실패 시).
     """
 
-    df = pyupbit.get_ohlcv(ticker, interval=min5, count=count_200)  # 5분봉 데이터
+    df = pyupbit.get_ohlcv(ticker, interval=min15, count=count_200)  # 5분봉 데이터
     if df is None or df.empty:
         return None
 
@@ -163,7 +163,7 @@ def find_best_bollinger_ratio(ticker, ratios=[i / 100 for i in range(6, 11)], wi
                     buy_price = df['open'].iloc[i + 1]
 
                     # 1.5% 수익률 목표 설정
-                    sell_target_price = buy_price * 1.003
+                    sell_target_price = buy_price * 1.015
                     
                     # 매도 조건 확인: 다음 봉부터 목표가 도달 여부 확인
                     for j in range(i + 1, len(df)):
@@ -198,7 +198,7 @@ def filtered_tickers(tickers):
             lower_band = bands_df['Lower_Band'].values
             band_diff = (upper_band - lower_band) / lower_band
 
-            best_BD_ratio = find_best_bollinger_ratio(t)
+            best_BD_ratio = find_best_bollinger_ratio(t, ratios=[0.06, 0.07, 0.08, 0.09, 0.1], window=20, std_dev=2.5)
             print(f"{t} / best_BD_ratio: {best_BD_ratio:,.4f}" if best_BD_ratio else f"{t} / best_BD_ratio: None")
             
             average_band_diff = np.mean(band_diff)
