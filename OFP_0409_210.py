@@ -34,25 +34,27 @@ rsi_buy_e = 35
 band_diff_margin = 0.065
 average_band_diff_rate = 1.05
 
-rsi_sell_s = 62
-rsi_sell_e = 75
+# rsi_sell_s = 66
+# rsi_sell_e = 100
 
-UpRsiRate = 75
+# UpRsiRate = 75
 
 def get_user_input():
     while True:
         try:
             min_rate = float(input("최소 수익률 (예: 0.3): "))
-            max_rate = float(input("최대 수익률 (예: 1.3): "))
+            # max_rate = float(input("최대 수익률 (예: 1.3): "))
             sell_time = int(input("매도감시횟수 (예: 30): "))
+            rsi_sell_s =int(input("RSI 매도 감시 시작 (예: 65): "))
+            rsi_sell_e =int(input("RSI 매도 감시 종료 (예: 80): "))
             break  # 모든 입력이 성공적으로 완료되면 루프 종료
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
 
-    return min_rate, max_rate, sell_time
+    return min_rate, sell_time, rsi_sell_s, rsi_sell_e  #max_rate, 
 
 # 함수 호출 및 결과 저장
-min_rate, max_rate, sell_time = get_user_input()
+min_rate, sell_time, rsi_sell_s, rsi_sell_e = get_user_input()  #max_rate, 
 
 second = 1.0
 min_krw = 50_000
@@ -113,71 +115,6 @@ def get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2.5):
 
     return bands_df.tail(4)
 
-# def find_best_bollinger_ratio(ticker, ratios=[i / 100 for i in range(6, 11)], window=20, std_dev=2.5):
-#     """
-#     특정 암호화폐에 대해 볼린저 밴드 비율을 적용하여
-#     1.5% 이상 수익률을 가장 많이 내는 (매도 횟수가 가장 많은) 볼린저 밴드 비율을 리턴하는 함수.
-
-#     Args:
-#         ticker (str): 암호화폐 티커 (예: "KRW-BTC").
-#         ratios (list): 볼린저 밴드 비율 리스트 (기본값: 0.06 ~ 0.1, 0.01 간격).
-#         window (int): 볼린저 밴드 윈도우 사이즈 (기본값: 20).
-#         std_dev (float): 볼린저 밴드 표준 편차 배수 (기본값: 2.5).
-
-#     Returns:
-#         float: 최적 볼린저 밴드 비율 또는 None (데이터 가져오기 실패 시).
-#     """
-
-#     df = pyupbit.get_ohlcv(ticker, interval="minute60", count=count_200)  # 5분봉 데이터
-#     if df is None or df.empty:
-#         return None
-
-#     best_ratio = band_diff_margin
-#     max_sell_count = 0  # 최대 매도 횟수 초기화 (함수 시작 시)
-
-#     # RSI 계산
-#     rsi = ta.momentum.RSIIndicator(df['close'], window=14).rsi()
-#     if rsi is None or rsi.empty:
-#         return None # RSI 계산 실패 시 None 반환
-
-#     # NaN 값 처리 (fillna 또는 dropna)
-#     rsi = rsi.fillna(0)  # NaN 값을 0으로 채우거나
-#     # rsi = rsi.dropna() # NaN 값을 가진 행 제거
-
-#     for ratio_threshold in ratios:
-#         # 볼린저 밴드 계산
-#         bollinger = ta.volatility.BollingerBands(df['close'], window=window, window_dev=std_dev)
-#         upper_band = bollinger.bollinger_hband().fillna(0)
-#         lower_band = bollinger.bollinger_lband().fillna(0)
-
-#         # 백테스팅
-#         sell_count = 0  # 현재 ratio_threshold에서의 매도 횟수 초기화
-
-#         for i in range(1, len(df) - 1): # 마지막 봉은 제외 (다음 봉 데이터 필요)
-#             band_diff = (upper_band.iloc[i] - lower_band.iloc[i]) / lower_band.iloc[i] if lower_band.iloc[i] != 0 else 0
-
-#             # 매수 조건 확인 : 볼린저 밴드 조건 + RSI 조건
-#             if band_diff > ratio_threshold and df['low'].iloc[i] <= lower_band.iloc[i]:
-#                 if rsi_buy_s < rsi.iloc[i] < rsi_buy_e and rsi.iloc[i] > rsi.iloc[i-1]: # RSI 증가 조건
-#                     # 매수: 다음 봉 시가로 매수 가정
-#                     buy_price = df['open'].iloc[i + 1]
-
-#                     # 1.5% 수익률 목표 설정
-#                     sell_target_price = buy_price * 1.015
-                    
-#                     # 매도 조건 확인: 다음 봉부터 목표가 도달 여부 확인
-#                     for j in range(i + 1, len(df)):
-#                         if df['high'].iloc[j] >= sell_target_price:
-#                             sell_count += 1  # 매도 횟수 증가
-#                             break  # 매도 후 루프 종료
-
-#         # 최대 매도 횟수 갱신
-#         if sell_count > max_sell_count:
-#             max_sell_count = sell_count
-#             best_ratio = ratio_threshold
-    
-#     return best_ratio
-
 def filtered_tickers(tickers):
     """특정 조건에 맞는 티커 필터링"""
     filtered_tickers = []
@@ -197,9 +134,6 @@ def filtered_tickers(tickers):
             upper_band = bands_df['Upper_Band'].values
             lower_band = bands_df['Lower_Band'].values
             band_diff = (upper_band - lower_band) / lower_band
-
-            # best_BD_ratio = find_best_bollinger_ratio(t, ratios=[0.06, 0.07, 0.08, 0.09, 0.1], window=20, std_dev=2.5)
-            # print(f"{t} / best_BD_ratio: {best_BD_ratio:,.4f}" if best_BD_ratio else f"{t} / best_BD_ratio: None")
             
             average_band_diff = np.mean(band_diff)
 
@@ -261,7 +195,7 @@ def get_best_ticker():
             held_coins.append(ticker)  # "KRW-코인명" 형태로 추가
     
     try:
-        df_criteria = pyupbit.get_ohlcv("KRW-XLM", interval="day", count=1)
+        df_criteria = pyupbit.get_ohlcv("KRW-ADA", interval="day", count=1)
         time.sleep(0.1)
         krw_cri_day_value = df_criteria['value'].iloc[-1]  # KRW-SOL의 당일 거래량
 
@@ -395,9 +329,9 @@ def trade_sell(ticker):
     ta_rsi = get_rsi(ticker, 14, interval = min5)
     rsi = ta_rsi.values
     
-    upper_price = rsi[-1] > UpRsiRate
+    # upper_price = rsi[-1] > UpRsiRate
     middle_price = (rsi_sell_s <= rsi[-1] <= rsi_sell_e) and rsi[-2] > rsi[-1]
-    cut_price = middle_price or upper_price or upper_boliinger
+    cut_price = upper_boliinger and middle_price 
 
     max_attempts = sell_time
     attempts = 0
@@ -405,9 +339,10 @@ def trade_sell(ticker):
     # else:
     if profit_rate >= min_rate:
         while attempts < max_attempts:       
-            print(f"[{ticker}] / [매도시도 {attempts + 1} / {max_attempts}] / 수익률: {profit_rate:.2f}% / upper_price : {upper_price}")
+            print(f"[{ticker}] / [매도시도 {attempts + 1} / {max_attempts}] / 수익률: {profit_rate:.2f}% / upper_Bol : {upper_boliinger}")
 
-            if profit_rate >= max_rate or (upper_boliinger and upper_price):
+            # if profit_rate >= max_rate or (upper_boliinger and upper_price):
+            if upper_boliinger and middle_price: #profit_rate >= max_rate or (
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 sellmsg = f"[!!목표가달성!!]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n"
                 sellmsg += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n"
@@ -500,7 +435,7 @@ def send_profit_report():
             
 trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
 trade_msg = f'{trade_start} trading start \n'
-trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 / RsiBuy: {rsi_buy_s} ~ {rsi_buy_e} / RsiSell: {rsi_sell_s} ~ {rsi_sell_e} / BD_margin: {band_diff_margin} / 손절: {cut_rate}% \n'
+trade_msg += f'매도: {min_rate}% ~ / 시도: {sell_time}회 / RsiBuy: {rsi_buy_s} ~ {rsi_buy_e} / RsiSell: {rsi_sell_s} ~ {rsi_sell_e} / BD_margin: {band_diff_margin} / 손절: {cut_rate}% \n'
 
 print(trade_msg)
 send_discord_message(trade_msg)
