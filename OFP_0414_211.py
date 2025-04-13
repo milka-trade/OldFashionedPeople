@@ -359,12 +359,12 @@ def trade_sell(ticker):
         else:
             if middle_price :   
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                middlemsg = f"[--익절--]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n"
+                middlemsg = f"[--익절--]:[{ticker}] / 수익률: {profit_rate:,.2f}%  / 현재가: {cur_price:,.1f} \n"
                 middlemsg += f"middle_price: {middle_price} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n" 
                 print(middlemsg)
                 send_discord_message(middlemsg)
             else:
-                middleFailmsg = f"[매도 감시중]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n"
+                middleFailmsg = f"[매도 감시중]:[{ticker}] / 수익률: {profit_rate:,.2f}%  / 현재가: {cur_price:,.1f} \n"
                 middleFailmsg += f"middle_price: {middle_price} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n" 
                 print(middleFailmsg)
                 send_discord_message(middleFailmsg)
@@ -374,12 +374,12 @@ def trade_sell(ticker):
         if profit_rate < cut_rate:
             if sell_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                cut_message = f"[손절]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
-                cut_message += f" {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e}  \n"
+                cut_message = f"[손절]: [{ticker}] 수익률: {profit_rate:,.2f}% / 현재가: {cur_price:,.1f} \n"
+                cut_message += f"{rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e}\n"
                 print(cut_message)
                 send_discord_message(cut_message)            
             else:
-                cutFailmsg = f"[손절감시중]: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f} \n"
+                cutFailmsg = f"[손절감시중]: [{ticker}] 수익률: {profit_rate:,.2f}% / 현재가: {cur_price:,.1f} \n"
                 cut_message += f" {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e}  \n"
                 
                 print(cutFailmsg)
