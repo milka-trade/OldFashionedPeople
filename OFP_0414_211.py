@@ -153,7 +153,7 @@ def filtered_tickers(tickers):
             rsi = ta_rsi.values
             rsi_rising = rsi[-2] < rsi[-1] and rsi_buy_s < rsi[-1] < rsi_buy_e
         
-            filteringTime = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
+            filteringTime = datetime.now().strftime('%m/%d %H시:%M분:%S초')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
             filtering_message += f"[cond1: {is_increasing}] band_diff: {band_diff[-1]:,.4f} > average*{average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f}\n"
             filtering_message += f"[cond2: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
@@ -229,7 +229,7 @@ def get_best_ticker():
         return None
 
     filtered_list = filtered_tickers(filtering_tickers)
-    filtered_time = datetime.now().strftime('%m/%d %H:%M:%S')
+    filtered_time = datetime.now().strftime('%m/%d %H시:%M분:%S초')
 
 
     if len(filtered_list) == 0 :
@@ -440,7 +440,7 @@ def send_profit_report():
             send_discord_message(f"send_profit_report/수익률 보고 중 오류 발생: {e}")
             time.sleep(5)
             
-trade_start = datetime.now().strftime('%m/%d %H:%M:%S')  # 시작시간 기록
+trade_start = datetime.now().strftime('%m/%d %H시:%M분:%S초')  # 시작시간 기록
 trade_msg = f'{trade_start} trading start \n'
 trade_msg += f'매도: {min_rate}% ~ / 시도: {sell_time}회 / RsiBuy: {rsi_buy_s} ~ {rsi_buy_e} / RsiSell: {rsi_sell_s} ~ {rsi_sell_e} / BD_margin: {band_diff_margin} / 손절: {cut_rate}% \n'
 
@@ -483,7 +483,7 @@ def buying_logic():
                     best_ticker = get_best_ticker()
 
                     if best_ticker:
-                        buy_time = datetime.now().strftime('%m/%d %H:%M:%S')
+                        buy_time = datetime.now().strftime('%m/%d %H시:%M분:%S초')
                         send_discord_message(f"[{buy_time}] 선정코인: [{best_ticker}]")
                         result = trade_buy(best_ticker)
                         
