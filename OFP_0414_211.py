@@ -37,7 +37,7 @@ average_band_diff_rate = 1.05
 # rsi_sell_s = 66
 # rsi_sell_e = 100
 
-# UpRsiRate = 75
+UpRsiRate = 90
 
 def get_user_input():
     while True:
@@ -316,39 +316,31 @@ def trade_sell(ticker):
 
     df = pyupbit.get_ohlcv(ticker, interval = min5, count = 4)
     time.sleep(second)
-    # df_close = df['close'].values
-    # df_low = df['low'].values
     df_high = df['high'].values
-    # print(df)
 
     bands_df = get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2.5)
     up_Bol = bands_df['Upper_Band'].values
     count_upper_band = sum(1 for i in range(len(up_Bol)) if up_Bol[i] < df_high[i] )
-    upper_boliinger = count_upper_band >= 1
+    upper_boliinger = count_upper_band > 1
     
     ta_rsi = get_rsi(ticker, 14, interval = min5)
     rsi = ta_rsi.values
     
-    # upper_price = rsi[-1] > UpRsiRate
+    upper_price = rsi[-1] > UpRsiRate
     middle_price = (rsi_sell_s <= rsi[-1] <= rsi_sell_e) and rsi[-2] > rsi[-1]
     sell_price = upper_boliinger and middle_price
-    cut_price = upper_boliinger and middle_price 
 
     max_attempts = sell_time
     attempts = 0
 
-    # else:
     if profit_rate >= min_rate:
         while attempts < max_attempts:       
             print(f"[{ticker}] / [매도시도 {attempts + 1} / {max_attempts}] / 수익률: {profit_rate:.2f}% / upper_Bol : {upper_boliinger}")
 
-            # if profit_rate >= max_rate or (upper_boliinger and upper_price):
-            if sell_price: #profit_rate >= max_rate or (
+            if upper_price or sell_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                sellmsg = f"[!!목표가달성!!]:[{ticker}] / 수익률: {profit_rate:.2f}%  / 현재가: {cur_price:,.1f} \n"
+                sellmsg = f"[!!목표가달성!!]:[{ticker}] / 수익률: {profit_rate:,.2f}%  / 현재가: {cur_price:,.1f} \n"
                 sellmsg += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n"
-
-                
                 print(sellmsg)
                 send_discord_message(sellmsg)
                 return sell_order
@@ -375,15 +367,15 @@ def trade_sell(ticker):
             if sell_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 cut_message = f"[손절]: [{ticker}] 수익률: {profit_rate:,.2f}% / 현재가: {cur_price:,.1f} \n"
-                cut_message += f"{rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e}\n"
+                cut_message += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n"
                 print(cut_message)
                 send_discord_message(cut_message)            
             else:
                 cutFailmsg = f"[손절감시중]: [{ticker}] 수익률: {profit_rate:,.2f}% / 현재가: {cur_price:,.1f} \n"
-                cut_message += f" {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e}  \n"
+                cutFailmsg += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n"
                 
                 print(cutFailmsg)
-                send_discord_message(cutFailmsg)
+                # send_discord_message(cutFailmsg)
                 return None
         else:
             return None 
