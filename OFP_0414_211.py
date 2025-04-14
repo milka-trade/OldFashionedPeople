@@ -340,7 +340,7 @@ def trade_sell(ticker):
             if upper_price or sell_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 sellmsg = f"[!!목표가달성!!]:[{ticker}] / 수익률: {profit_rate:,.2f}%  / 현재가: {cur_price:,.1f} \n"
-                sellmsg += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n"
+                sellmsg += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n"
                 print(sellmsg)
                 send_discord_message(sellmsg)
                 return sell_order
@@ -352,12 +352,12 @@ def trade_sell(ticker):
             if middle_price :   
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 middlemsg = f"[--익절--]:[{ticker}] / 수익률: {profit_rate:,.2f}%  / 현재가: {cur_price:,.1f} \n"
-                middlemsg += f"middle_price: {middle_price} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n" 
+                middlemsg += f"middle_price: {middle_price} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n" 
                 print(middlemsg)
                 send_discord_message(middlemsg)
             else:
                 middleFailmsg = f"[매도 감시중]:[{ticker}] / 수익률: {profit_rate:,.2f}%  / 현재가: {cur_price:,.1f} \n"
-                middleFailmsg += f"middle_price: {middle_price} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n" 
+                middleFailmsg += f"middle_price: {middle_price} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n" 
                 print(middleFailmsg)
                 send_discord_message(middleFailmsg)
                 return None
@@ -367,12 +367,12 @@ def trade_sell(ticker):
             if sell_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 cut_message = f"[손절]: [{ticker}] 수익률: {profit_rate:,.2f}% / 현재가: {cur_price:,.1f} \n"
-                cut_message += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n"
+                cut_message += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n"
                 print(cut_message)
                 send_discord_message(cut_message)            
             else:
                 cutFailmsg = f"[손절감시중]: [{ticker}] 수익률: {profit_rate:,.2f}% / 현재가: {cur_price:,.1f} \n"
-                cutFailmsg += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n \n"
+                cutFailmsg += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n"
                 
                 print(cutFailmsg)
                 # send_discord_message(cutFailmsg)
