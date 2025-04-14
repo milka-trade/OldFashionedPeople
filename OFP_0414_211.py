@@ -360,6 +360,7 @@ def trade_sell(ticker):
                 middleFailmsg += f"middle_price: {middle_price} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n" 
                 print(middleFailmsg)
                 send_discord_message(middleFailmsg)
+                time.sleep(2)
                 return None
         return None
     else:
@@ -376,6 +377,7 @@ def trade_sell(ticker):
                 
                 print(cutFailmsg)
                 # send_discord_message(cutFailmsg)
+                time.sleep(5)
                 return None
         else:
             return None 
