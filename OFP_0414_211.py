@@ -377,7 +377,7 @@ def trade_sell(ticker):
                 
                 print(cutFailmsg)
                 # send_discord_message(cutFailmsg)
-                time.sleep(5)
+                time.sleep(60)
                 return None
         else:
             return None 
