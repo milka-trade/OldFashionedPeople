@@ -141,7 +141,7 @@ def filtered_tickers(tickers):
             
             last_ema = get_ema(t, interval = min5).iloc[-1]
 
-            count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_low[i] < min(lower_band[i] * 1.005, last_ema))
+            count_below_lower_band = sum(1 for i in range(len(lower_band)) if df_low[i] < lower_band[i])
             
             low_boliinger = count_below_lower_band >= 1 
             
@@ -153,11 +153,11 @@ def filtered_tickers(tickers):
             rsi = ta_rsi.values
             rsi_rising = rsi[-2] < rsi[-1] and rsi_buy_s < rsi[-1] < rsi_buy_e
         
-            filteringTime = datetime.now().strftime('%m/%d %H시:%M분:%S초')  # 시작시간 기록
+            filteringTime = datetime.now().strftime('%m/%d %H시%M분%S초')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
-            filtering_message += f"[cond1: {is_increasing}] band_diff: {band_diff[-1]:,.4f} > average*{average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f}\n"
+            filtering_message += f"[cond1: {is_increasing}] band_diff: {band_diff[-1]:,.4f} > average*{average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f} / BD_Margin: {band_diff_margin} \n"
             filtering_message += f"[cond2: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
-            filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-1]:,.2f} or ema: {last_ema:,.2f} > df_low15: {df_low[-1]:,.2f} \n"
+            filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-1]:,.2f} > df_low15: {df_low[-1]:,.2f} \n"
             filtering_message += f"[cond4: {rsi_rising}] {rsi_buy_s} > rsi: {rsi[-3]:,.2f} >> {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} << > {rsi_buy_e} \n"
 
             # print(filtering_message)
@@ -229,7 +229,7 @@ def get_best_ticker():
         return None
 
     filtered_list = filtered_tickers(filtering_tickers)
-    filtered_time = datetime.now().strftime('%m/%d %H시:%M분:%S초')
+    filtered_time = datetime.now().strftime('%m/%d %H시%M분%S초')
 
 
     if len(filtered_list) == 0 :
@@ -377,7 +377,7 @@ def trade_sell(ticker):
                 
                 print(cutFailmsg)
                 # send_discord_message(cutFailmsg)
-                time.sleep(60)
+                time.sleep(180)
                 return None
         else:
             return None 
@@ -442,7 +442,7 @@ def send_profit_report():
             send_discord_message(f"send_profit_report/수익률 보고 중 오류 발생: {e}")
             time.sleep(5)
             
-trade_start = datetime.now().strftime('%m/%d %H시:%M분:%S초')  # 시작시간 기록
+trade_start = datetime.now().strftime('%m/%d %H시%M분%S초')  # 시작시간 기록
 trade_msg = f'{trade_start} trading start \n'
 trade_msg += f'매도: {min_rate}% ~ / 시도: {sell_time}회 / RsiBuy: {rsi_buy_s} ~ {rsi_buy_e} / RsiSell: {rsi_sell_s} ~ {rsi_sell_e} / BD_margin: {band_diff_margin} / 손절: {cut_rate}% \n'
 
@@ -485,7 +485,7 @@ def buying_logic():
                     best_ticker = get_best_ticker()
 
                     if best_ticker:
-                        buy_time = datetime.now().strftime('%m/%d %H시:%M분:%S초')
+                        buy_time = datetime.now().strftime('%m/%d %H시%M분%S초')
                         send_discord_message(f"[{buy_time}] 선정코인: [{best_ticker}]")
                         result = trade_buy(best_ticker)
                         
