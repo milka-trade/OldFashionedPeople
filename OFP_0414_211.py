@@ -37,13 +37,13 @@ average_band_diff_rate = 1.05
 # rsi_sell_s = 66
 # rsi_sell_e = 100
 
-UpRsiRate = 90
+UpRsiRate = 70
 
 def get_user_input():
     while True:
         try:
             min_rate = float(input("최소 수익률 (예: 0.3): "))
-            # max_rate = float(input("최대 수익률 (예: 1.3): "))
+            max_rate = float(input("최대 수익률 (예: 1.3): "))
             sell_time = int(input("매도감시횟수 (예: 30): "))
             rsi_sell_s =int(input("RSI 매도 감시 시작 (예: 65): "))
             rsi_sell_e =int(input("RSI 매도 감시 종료 (예: 80): "))
@@ -51,10 +51,10 @@ def get_user_input():
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
 
-    return min_rate, sell_time, rsi_sell_s, rsi_sell_e  #max_rate, 
+    return min_rate, sell_time, rsi_sell_s, rsi_sell_e, max_rate
 
 # 함수 호출 및 결과 저장
-min_rate, sell_time, rsi_sell_s, rsi_sell_e = get_user_input()  #max_rate, 
+min_rate, sell_time, rsi_sell_s, rsi_sell_e, max_rate = get_user_input()  #, 
 
 second = 1.0
 min_krw = 50_000
@@ -152,30 +152,37 @@ def filtered_tickers(tickers):
             ta_rsi = get_rsi(t, 14, interval = min5)
             rsi = ta_rsi.values
             rsi_rising = rsi[-2] < rsi[-1] and rsi_buy_s < rsi[-1] < rsi_buy_e
+
+            ta_rsiD = get_rsi(t, 14, interval = "day")
+            rsiD = ta_rsiD.values
+            rsiD_range = rsiD[-2] < rsiD[-1] and 35 < rsiD[-1] < 65
         
             filteringTime = datetime.now().strftime('%m/%d %H시%M분%S초')  # 시작시간 기록
             filtering_message = f"<<[{filteringTime}] {t}>>\n"
-            filtering_message += f"[cond1: {is_increasing}] band_diff: {band_diff[-1]:,.4f} > average*{average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f} / BD_Margin: {band_diff_margin} \n"
-            filtering_message += f"[cond2: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
-            filtering_message += f"[cond3: {low_boliinger}] LB: {lower_band[-1]:,.2f} > df_low15: {df_low[-1]:,.2f} \n"
-            filtering_message += f"[cond4: {rsi_rising}] {rsi_buy_s} > rsi: {rsi[-3]:,.2f} >> {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} << > {rsi_buy_e} \n"
+            filtering_message += f"[cond1: {rsiD_range}] 35 < rsiD: {rsiD[-2]:,.2f} > {rsiD[-1]:,.2f} < 65 \n"
+            filtering_message += f"[cond2: {is_increasing}] band_diff: {band_diff[-1]:,.4f} > average*{average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f} / BD_Margin: {band_diff_margin} \n"
+            filtering_message += f"[cond3: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
+            filtering_message += f"[cond4: {low_boliinger}] LB: {lower_band[-1]:,.2f} > df_low15: {df_low[-1]:,.2f} \n"
+            filtering_message += f"[cond5: {rsi_rising}] {rsi_buy_s} > rsi: {rsi[-3]:,.2f} >> {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} << > {rsi_buy_e} \n"
 
             # print(filtering_message)
-            if is_increasing :
-                print(filtering_message)
-                # send_discord_message(filtering_message)
-                                                               
-                if low_boliinger :
-                    # print(filtering_message)
-
-                    if low_band_slope_decreasing :
+            if rsiD_range :
+                # print(filtering_message)
+                if is_increasing :
+                    print(filtering_message)
+                    # send_discord_message(filtering_message)
+                                                                
+                    if low_boliinger :
                         # print(filtering_message)
-                        # send_discord_message(filtering_message)
 
-                        if rsi_rising:
+                        if low_band_slope_decreasing :
                             # print(filtering_message)
-                            send_discord_message(filtering_message)
-                            filtered_tickers.append(t)
+                            # send_discord_message(filtering_message)
+
+                            if rsi_rising:
+                                # print(filtering_message)
+                                send_discord_message(filtering_message)
+                                filtered_tickers.append(t)
 
         except (KeyError, ValueError) as e:
             send_discord_message(f"filtered_tickers/Error processing ticker {t}: {e}")
@@ -337,7 +344,7 @@ def trade_sell(ticker):
         while attempts < max_attempts:       
             print(f"[{ticker}] / [매도시도 {attempts + 1} / {max_attempts}] / 수익률: {profit_rate:.2f}% / upper_Bol : {upper_boliinger}")
 
-            if upper_price or sell_price:
+            if profit_rate > max_rate or upper_price or sell_price:
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 sellmsg = f"[!!목표가달성!!]:[{ticker}] / 수익률: {profit_rate:,.2f}%  / 현재가: {cur_price:,.1f} \n"
                 sellmsg += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n"
@@ -444,7 +451,7 @@ def send_profit_report():
             
 trade_start = datetime.now().strftime('%m/%d %H시%M분%S초')  # 시작시간 기록
 trade_msg = f'{trade_start} trading start \n'
-trade_msg += f'매도: {min_rate}% ~ / 시도: {sell_time}회 / RsiBuy: {rsi_buy_s} ~ {rsi_buy_e} / RsiSell: {rsi_sell_s} ~ {rsi_sell_e} / BD_margin: {band_diff_margin} / 손절: {cut_rate}% \n'
+trade_msg += f'매도: {min_rate}% ~ {max_rate}% / 시도: {sell_time}회 / RsiBuy: {rsi_buy_s} ~ {rsi_buy_e} / RsiSell: {rsi_sell_s} ~ {rsi_sell_e} / BD_margin: {band_diff_margin} / 손절: {cut_rate}% \n'
 
 print(trade_msg)
 send_discord_message(trade_msg)
