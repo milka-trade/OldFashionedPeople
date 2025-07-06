@@ -293,6 +293,7 @@ def filtered_tickers(tickers):
             filtering_message += f"[cond2: {is_increasing}] band_diff: {band_diff[-1]:,.4f} > average*{average_band_diff_rate}: {average_band_diff*average_band_diff_rate:,.4f} / BD_Margin: {band_diff_margin} \n"
             filtering_message += f"[cond3: {low_band_slope_decreasing}] LBSlopes: {slopes[-2] * slopeRate:,.3f} >> {slopes[-1]:,.3f} \n"
             filtering_message += f"[cond4: {low_boliinger}] LB: {lower_band[-1]:,.2f} > df_low15: {df_low[-1]:,.2f} \n"
+            filtering_message += f"[cond5: bullish_diver:{divergence_result['is_bullish_divergence']}] / signal_strength:{divergence_result['signal_strength']} > 50 \n"
             filtering_message5 = f"[cond5: {t} / bullish_diver:{divergence_result['is_bullish_divergence']}] / signal_strength:{divergence_result['signal_strength']} > 50 \n"
 
 
@@ -509,7 +510,7 @@ def trade_sell(ticker):
                 sell_order = upbit.sell_market_order(ticker, buyed_amount)
                 cut_message = f"[손절]: [{ticker}] 수익률: {profit_rate:,.2f}% / 현재가: {cur_price:,.1f} \n"
                 cut_message += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n"
-                print(cut_message)
+                # print(cut_message)
                 send_discord_message(cut_message)            
         #     else:
         #         cutFailmsg = f"[손절감시중]: [{ticker}] 수익률: {profit_rate:,.2f}% / 현재가: {cur_price:,.1f} \n"
