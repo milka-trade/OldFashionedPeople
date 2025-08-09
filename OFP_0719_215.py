@@ -31,7 +31,7 @@ min15 = "minute15"
 rsi_buy_s = 25
 rsi_buy_e = 45
 
-band_diff_margin = 0.04
+band_diff_margin = 0.02
 # average_band_diff_rate = 1.05
 
 # rsi_sell_s = 66
@@ -58,7 +58,7 @@ min_rate, sell_time, rsi_sell_s, rsi_sell_e, max_rate = get_user_input()  #,
 
 second = 1.0
 min_krw = 50_000
-cut_rate = -4.0
+cut_rate = -5.0
 
 def get_balance(ticker):
     try:
