@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 import requests
 import ta
 import pandas as pd
-from scipy.stats import linregress
 
 load_dotenv()
 
@@ -116,6 +115,7 @@ def get_rsi_bul_diver(ticker, period=14, interval=min5, lookback=20, min_data_po
     try:
         # 충분한 데이터 확보를 위해 더 많은 캔들 가져오기
         df = pyupbit.get_ohlcv(ticker, interval=interval, count=max(200, min_data_points + lookback))
+        time.sleep(0.1)
         
         if df is None or df.empty or len(df) < min_data_points:
             return None
@@ -193,7 +193,7 @@ def get_rsi_bul_diver(ticker, period=14, interval=min5, lookback=20, min_data_po
         print(f"Error in get_rsi_bul_diver for {ticker}: {e}")
         return None
 
-def get_rsi_bear_diver(ticker, period=14, interval='minute5', lookback=20, min_data_points=50):
+def get_rsi_bear_diver(ticker, period=14, interval=min5, lookback=20, min_data_points=50):
     """
     RSI Bearish Divergence 신호를 감지하는 함수 (매도 시점)
     
@@ -217,6 +217,7 @@ def get_rsi_bear_diver(ticker, period=14, interval='minute5', lookback=20, min_d
     try:
         # 충분한 데이터 확보를 위해 더 많은 캔들 가져오기
         df = pyupbit.get_ohlcv(ticker, interval=interval, count=max(200, min_data_points + lookback))
+        time.sleep(0.1)
         
         if df is None or df.empty or len(df) < min_data_points:
             return None
@@ -490,14 +491,14 @@ def trade_sell(ticker):
     cur_price = pyupbit.get_current_price(ticker)
     profit_rate = (cur_price - avg_buy_price) / avg_buy_price * 100 if avg_buy_price > 0 else 0  # 수익률 계산
 
-    df = pyupbit.get_ohlcv(ticker, interval = min5, count = 4)
-    time.sleep(second)
-    df_high = df['high'].values
+    # df = pyupbit.get_ohlcv(ticker, interval = min5, count = 4)
+    # time.sleep(second)
+    # df_high = df['high'].values
 
-    bands_df = get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2.5)
-    up_Bol = bands_df['Upper_Band'].values
-    count_upper_band = sum(1 for i in range(len(up_Bol)) if up_Bol[i] < df_high[i] )
-    upper_boliinger = count_upper_band >= 1
+    # bands_df = get_bollinger_bands(ticker, interval = min5, window=20, std_dev=2.5)
+    # up_Bol = bands_df['Upper_Band'].values
+    # count_upper_band = sum(1 for i in range(len(up_Bol)) if up_Bol[i] < df_high[i] )
+    # upper_boliinger = count_upper_band >= 1
     
     ta_rsi = get_rsi(ticker, 14, interval = min5)
     rsi = ta_rsi.values
@@ -519,7 +520,7 @@ def trade_sell(ticker):
 
     if profit_rate >= min_rate:
         while attempts < max_attempts:       
-            print(f"[{ticker}] / [매도시도 {attempts + 1} / {max_attempts}] / 수익률: {profit_rate:.2f}% / upper_Bol : {upper_boliinger}")
+            print(f"[{ticker}] / [매도시도 {attempts + 1} / {max_attempts}] / 수익률: {profit_rate:.2f}%")
 
             # if profit_rate > max_rate or upper_price or sell_price:
             if profit_rate > max_rate:
@@ -555,7 +556,7 @@ def trade_sell(ticker):
         if profit_rate < cut_rate:
             sell_order = upbit.sell_market_order(ticker, buyed_amount)
             cut_message = f"[손절]: [{ticker}] 수익률: {profit_rate:,.2f}% / 현재가: {cur_price:,.1f} \n"
-            cut_message += f"upper_Bol: {upper_boliinger} / {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n"
+            cut_message += f"RSI: {rsi_sell_s} < rsi: {rsi[-2]:,.2f} >> {rsi[-1]:,.2f} < {rsi_sell_e} \n"
             print(cut_message)
             send_discord_message(cut_message)            
 
