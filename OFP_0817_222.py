@@ -1108,8 +1108,8 @@ def filtered_tickers(tickers):
             send_discord_message(f"[ERROR] {t}: {str(e)[:100]}")
             time.sleep(2)
 
-    # 예측 결과 요약 (중립이 아닌 예측이 있는 경우에만 메시지 발송)
-    if any(count > 0 for key, count in prediction_summary.items() if key != 'NEUTRAL'):
+    # 예측 결과 요약 (급상승 또는 상승이 있는 경우에만 메시지 발송)
+    if prediction_summary['SURGE'] > 0 or prediction_summary['UP'] > 0:
         summary_msg = f"📊 **예측 결과 요약**: 급상승 {prediction_summary['SURGE']}개 | 상승 {prediction_summary['UP']}개 | 하락 {prediction_summary['DOWN']}개 | 폭락 {prediction_summary['CRASH']}개 | 중립 {prediction_summary['NEUTRAL']}개"
         send_discord_message(summary_msg)
 
