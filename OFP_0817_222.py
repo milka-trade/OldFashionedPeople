@@ -1104,50 +1104,15 @@ def filtered_tickers(tickers):
                         filtered_tickers.append(t)
                     # else: 필수조건만 충족, 관찰 필요 - 메시지 없음
 
-# else: 조건 미충족 - 메시지 없음
-
-            # # 최종 판단 (기존 로직과 동일)
-            # if essential_conditions and has_enough_bonus:
-            #     if prediction in ['SURGE', 'UP']:
-            #         send_discord_message(filtering_message + "🎯 **완벽한 매수 신호! (최적화된 조건+상승예측)**")
-            #         filtered_tickers.append(t)
-            #     elif prediction == 'NEUTRAL':
-            #         send_discord_message(filtering_message + "⚖️ **양호한 매수 신호 (최적화된 조건+중립예측)**")
-            #         filtered_tickers.append(t)
-            #     else:
-            #         send_discord_message(filtering_message + "🚫 **조건 완벽하나 하락 예측으로 제외**")
-                    
-            # elif essential_conditions and bonus_score >= 2.0:
-            #     if prediction == 'SURGE':
-            #         send_discord_message(filtering_message + "🚀 **급상승 예측! 조건 완화 매수**")
-            #         filtered_tickers.append(t)
-            #     elif prediction == 'UP':
-            #         send_discord_message(filtering_message + "📈 **상승 예측으로 매수**")
-            #         filtered_tickers.append(t)
-            #     else:
-            #         send_discord_message(filtering_message + "⏸️ **조건 부족+예측 불분명으로 보류**")
-                    
-            # elif essential_conditions:
-            #     if prediction == 'SURGE':
-            #         send_discord_message(filtering_message + "🌟 **급상승 예측! 필수조건만으로도 매수**")
-            #         filtered_tickers.append(t)
-            #     else:
-            #         send_discord_message(filtering_message + "🔍 **필수조건만 충족, 관찰 필요**")
-            #         if market_rsi < 40:  # 과매도 상황에서만 추가 기회
-            #             filtered_tickers.append(t)
-            #             send_discord_message("📉 **과매도 시장 바닥권으로 추가 매수**")
-            # else:
-            #     # send_discord_message(filtering_message + "❌ **조건 미충족**")
-
         except Exception as e:
             send_discord_message(f"[ERROR] {t}: {str(e)[:100]}")
             time.sleep(2)
 
-    # 예측 결과 요약 (기존과 동일)
-    if any(prediction_summary.values()):
+    # 예측 결과 요약 (중립이 아닌 예측이 있는 경우에만 메시지 발송)
+    if any(count > 0 for key, count in prediction_summary.items() if key != 'NEUTRAL'):
         summary_msg = f"📊 **예측 결과 요약**: 급상승 {prediction_summary['SURGE']}개 | 상승 {prediction_summary['UP']}개 | 하락 {prediction_summary['DOWN']}개 | 폭락 {prediction_summary['CRASH']}개 | 중립 {prediction_summary['NEUTRAL']}개"
         send_discord_message(summary_msg)
-    
+
     return filtered_tickers
 
 def get_best_ticker():
@@ -1252,7 +1217,7 @@ def trade_buy(ticker):
         
         try:
             asset_ticker = f"KRW-{currency}"
-            current_price = upbit.get_current_price(asset_ticker)
+            current_price = pyupbit.get_current_price(asset_ticker)
             
             if current_price is None or current_price <= 0:
                 print(f"⚠️ {currency}: 가격 조회 결과 None 또는 0")
