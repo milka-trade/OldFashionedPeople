@@ -56,7 +56,7 @@ def get_user_input():
 min_rate, sell_time, rsi_sell_s, rsi_sell_e, max_rate = get_user_input()
 
 second = 1.0
-min_krw = 50_000
+min_krw = 10_000
 cut_rate = -5.0
 
 def get_balance(ticker):
@@ -1116,7 +1116,7 @@ def filtered_tickers(tickers):
     return filtered_tickers
 
 def get_best_ticker():
-    selected_tickers = ["KRW-XRP", "KRW-SOL", "KRW-ADA", "KRW-DOGE", "KRW-ETH", "KRW-BTC"]
+    selected_tickers = ["KRW-XRP", "KRW-SOL", "KRW-ADA", "KRW-ETH"]
     balances = upbit.get_balances()
     held_coins = []
 
@@ -1238,19 +1238,56 @@ def trade_buy(ticker):
 
     print(f"📋 분석 완료: 총 {significant_assets_count}개 자산이 1만원 이상, 총 평가금액 {total_asset_value:,.0f}원")
 
-    # === 2. 보유 자산 수에 따른 매수 금액 결정 ===
+    # === 2. 새로운 매수 전략: 10만원 단위 매수 + 10만원 미만 시 전액 매수 ===
     buy_size = 0
+    MIN_ORDER_AMOUNT = min_krw  # 업비트 최소 주문 금액
+    STANDARD_BUY_AMOUNT = 100000  # 표준 매수 금액 (10만원)
 
-    if significant_assets_count >= 1:
-        print(f"🎯 1만원 이상 보유 자산 {significant_assets_count}개 확인 → 보유 원화 전량 매수 로직 적용")
+    print(f"\n🎯 매수 전략 결정 중...")
+
+    # 잔고가 최소 주문 금액 미만인 경우
+    if krw < MIN_ORDER_AMOUNT:
+        print(f"❌ 원화 잔고가 최소 주문 금액({MIN_ORDER_AMOUNT:,}원) 미만입니다.")
+        print("💡 추가 입금 후 거래를 진행해주세요.")
+        buy_size = 0
+
+    # 잔고가 10만원 미만인 경우 → 전액 매수
+    elif krw < STANDARD_BUY_AMOUNT:
         buy_size = krw * 0.9995  # 수수료 고려하여 99.95% 매수
-        print(f"💵 전량 매수 금액: {buy_size:,.0f}원 (원화의 99.95%)")
+        print(f"💡 원화 잔고가 10만원 미만 → 전액 매수 전략 적용")
+        print(f"💵 전액 매수 금액: {buy_size:,.0f}원 (원화의 99.95%)")
+        
+        # 수수료 제외 후에도 최소 주문 금액 이상인지 확인
+        if buy_size < MIN_ORDER_AMOUNT:
+            print(f"⚠️ 수수료 제외 후 금액이 최소 주문 금액({MIN_ORDER_AMOUNT:,}원) 미만입니다.")
+            buy_size = 0
+
+    # 잔고가 10만원 이상인 경우 → 10만원 단위 매수
     else:
-        print("⚡ 1만원 이상 보유 자산 없음 → 보유 원화 절반 매수 로직 적용")
-        buy_size = krw * 0.5
-        print(f"💵 절반 매수 금액: {buy_size:,.0f}원 (원화의 50%)")
+        buy_size = STANDARD_BUY_AMOUNT
+        print(f"🚀 10만원 단위 DCA 매수 전략 적용")
+        print(f"💵 표준 매수 금액: {buy_size:,.0f}원")
+        print(f"💰 매수 후 잔여 원화: {krw - buy_size:,.0f}원")
 
     print(f"🔥 최종 매수 예정 금액: {buy_size:,.0f}원")
+
+    # === 3. 매수 전략 요약 출력 ===
+    if buy_size > 0:
+        print(f"\n✅ 매수 전략 확정!")
+        print(f"📊 현재 포트폴리오: {significant_assets_count}개 유의미 자산")
+        print(f"💎 총 자산 가치: {total_asset_value:,.0f}원")
+        print(f"🎯 이번 매수 금액: {buy_size:,.0f}원")
+        
+        # DCA 전략 정보 출력
+        if krw >= STANDARD_BUY_AMOUNT:
+            remaining_krw = krw - buy_size
+            possible_additional_buys = remaining_krw // STANDARD_BUY_AMOUNT
+            print(f"🔄 추가 매수 가능 횟수: {possible_additional_buys}회 (잔여 {remaining_krw % STANDARD_BUY_AMOUNT:,.0f}원)")
+    else:
+        print(f"\n❌ 매수 조건을 만족하지 않습니다.")
+        if krw > 0:
+            print(f"💡 현재 잔고 {krw:,.0f}원으로는 매수가 불가능합니다.")
+            print(f"📝 최소 {MIN_ORDER_AMOUNT:,}원 이상 입금 후 재시도해주세요.")
 
     # === 3. 기존 기술적 분석 및 매수 실행 로직 ===
     max_retries = 5
@@ -1381,9 +1418,6 @@ def trade_buy(ticker):
         send_discord_message(insufficient_msg)
         return "Insufficient balance", None
     
-
-
-
 def get_enhanced_indicators(ticker):
     """
     핵심 지표들만 간단히 계산
