@@ -1169,7 +1169,7 @@ def filtered_tickers(tickers):
                     send_discord_message(filtering_message + "🎯 **완벽한 매수 신호! (최적화된 조건+상승예측)**")
                     filtered_tickers.append(t)
                 elif prediction == 'NEUTRAL':
-                    send_discord_message(filtering_message + "⚖️ **양호한 매수 신호 (최적화된 조건+중립예측)**")
+                    # send_discord_message(filtering_message + "⚖️ **양호한 매수 신호 (최적화된 조건+중립예측)**")
                     filtered_tickers.append(t)
                 # else: 하락 예측으로 제외 - 메시지 없음
                     
