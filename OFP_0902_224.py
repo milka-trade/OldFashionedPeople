@@ -41,8 +41,8 @@ def get_user_input():
     while True:
         try:
             min_rate = float(input("최소 수익률 (예: 0.4): "))
-            max_rate = float(input("최대 수익률 (예: 2.6): "))
-            sell_time = int(input("매도감시횟수 (예: 30): "))
+            max_rate = float(input("최대 수익률 (예: 1.6): "))
+            sell_time = int(input("매도감시횟수 (예: 10): "))
             rsi_sell_s =int(input("RSI 매도 감시 시작 (예: 60): "))
             rsi_sell_e =int(input("RSI 매도 감시 종료 (예: 75): "))
             # band_diff_margin = float(input("BD Margin (예: 0.025): "))
@@ -1200,7 +1200,7 @@ def filtered_tickers(tickers):
     # 예측 결과 요약 (급상승 또는 상승이 있는 경우에만 메시지 발송)
     if prediction_summary['SURGE'] > 0 or prediction_summary['UP'] > 0:
         summary_msg = f"📊 **예측 결과 요약**: 급상승 {prediction_summary['SURGE']}개 | 상승 {prediction_summary['UP']}개 | 하락 {prediction_summary['DOWN']}개 | 폭락 {prediction_summary['CRASH']}개 | 중립 {prediction_summary['NEUTRAL']}개"
-        send_discord_message(summary_msg)
+        print(summary_msg)
 
     return filtered_tickers
 
