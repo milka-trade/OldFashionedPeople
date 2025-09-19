@@ -1213,6 +1213,18 @@ def get_best_ticker():
             ticker = f"KRW-{b['currency']}"  # 현재가 조회를 위한 티커 설정
             held_coins.append(ticker)  # "KRW-코인명" 형태로 추가
     
+    # ✅ XLM 기준 거래량 조회
+    cri_value = None
+    try:
+        cri_df = pyupbit.get_ohlcv("KRW-ada", interval="day", count=1)
+        if cri_df is not None and 'value' in cri_df.columns and not cri_df.empty:
+            cri_value = cri_df['value'].iloc[-1]
+            print(f"[INFO] ada 기준 거래량: {cri_value:,.0f}")
+        else:
+            print(f"[경고] ada 거래량 데이터 수집 실패 - 거래량 필터 비활성화")
+    except Exception as e:
+        print(f"[경고] ada 데이터 조회 오류: {e} - 거래량 필터 비활성화")
+    
     try:
         all_tickers = pyupbit.get_tickers(fiat="KRW")
         filtering_tickers = []
@@ -1245,12 +1257,25 @@ def get_best_ticker():
                     if cur_price is None:  # ✅ 현재가 검증 추가
                         continue
 
-                    # ✅ 조건 약간 강화 (시장 상황 고려)
+                    # ✅ 기존 캔들 조건
                     candle_cond = df_open * 0.92 < cur_price < df_open * 1.2
-        
-                    # candle_cond = df_open * 0.9 < cur_price < df_open * 1.3
-
-                    if candle_cond :
+                    
+                    # ✅ XLM 거래량 기준 필터링 조건
+                    value_cond = True  # 기본값: 조건 통과
+                    if cri_value is not None and 'value' in df.columns:
+                        try:
+                            current_value = df['value'].iloc[-1]
+                            value_cond = current_value > cri_value
+                            if not value_cond:
+                                # 거래량 부족으로 필터링된 경우 로그 (선택사항)
+                                # print(f"[INFO] {ticker} 거래량 부족: {current_volume:,.0f} < {xlm_volume:,.0f}")
+                                pass
+                        except Exception as e:
+                            print(f"[경고] {ticker} 거래량 비교 오류: {e}")
+                            value_cond = True  # 오류 시 조건 통과로 처리
+                    
+                    # ✅ 통합 조건 검사
+                    if candle_cond and value_cond:
                         filtering_tickers.append(ticker)
 
                 except Exception as e:  # ✅ 개별 티커 예외 처리
@@ -1265,14 +1290,14 @@ def get_best_ticker():
     filtered_list = filtered_tickers(filtering_tickers)
     filtered_time = datetime.now().strftime('%m/%d %H시%M분%S초')
 
-    if len(filtered_list) == 0 :
+    if len(filtered_list) == 0:
         return None
     
-    elif len(filtered_list) == 1 :
+    elif len(filtered_list) == 1:
         send_discord_message(f"{filtered_time} [{filtered_list}]")
         return filtered_list[0]  # 티커가 1개인 경우 해당 티커 반환
         
-    else :
+    else:
         if len(filtered_list) > 1:
     
             bestC = None  # 초기 최고 코인 초기화
@@ -1280,7 +1305,7 @@ def get_best_ticker():
 
             for ticker in filtered_list:   # 조회할 코인 필터링
                 try:  # ✅ RSI 계산 예외 처리
-                    ta_rsi = get_rsi(ticker, 14, interval = min5)
+                    ta_rsi = get_rsi(ticker, 14, interval=min5)
                     if ta_rsi is not None and len(ta_rsi.values) > 0:
                         rsi = ta_rsi.values
                         current_rsi = rsi[-1]  # 가장 최근 rsi 값
