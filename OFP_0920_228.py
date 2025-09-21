@@ -1740,7 +1740,7 @@ def get_best_ticker():
     
     사고 흐름:
     1. 보유 코인 빠른 식별 → 2. 기준 거래량 안정적 설정 → 3. 병렬 데이터 수집
-    4. 다층 필터링 → 5. 기술적 분석 기반 최종 선별 → 6. 위험도 검증
+    4. 다층 필터링 (급등/저변동성 제외 강화) → 5. 기술적 분석 기반 최종 선별 → 6. 위험도 검증
     """
     
     # ========== STEP 1: 보유 코인 식별 및 초기 설정 ==========
@@ -1758,24 +1758,35 @@ def get_best_ticker():
         send_discord_message(f"잔고 조회 실패: {e}")
         return None
     
-    # ========== STEP 2: 기준 거래량 설정 (다중 기준 적용) ==========
-    reference_tickers = ["KRW-ADA", "KRW-XRP", "KRW-DOGE"]  # 안정적 거래량 기준
-    cri_value = None
+    # ========== STEP 2: 기준 거래량 설정 (평균값 기반, 실패시 최소값 적용) ==========
+    reference_tickers = ["KRW-XLM", "KRW-HBAR", "KRW-DOGE"]  # 안정적 거래량 기준
+    reference_values = []
     
     for ref_ticker in reference_tickers:
         try:
             cri_df = pyupbit.get_ohlcv(ref_ticker, interval="day", count=1)
             if cri_df is not None and 'value' in cri_df.columns and not cri_df.empty:
-                cri_value = cri_df['value'].iloc[-1]
-                print(f"[INFO] {ref_ticker} 기준 거래량: {cri_value:,.0f}")
-                break
+                ref_value = cri_df['value'].iloc[-1]
+                reference_values.append(ref_value)
+                print(f"[INFO] {ref_ticker} 거래량: {ref_value:,.0f}")
+            else:
+                print(f"[경고] {ref_ticker} 데이터 없음")
         except Exception as e:
             print(f"[경고] {ref_ticker} 거래량 조회 실패: {e}")
             continue
     
-    if cri_value is None:
-        print("[경고] 기준 거래량 설정 실패 - 보수적 필터링 적용")
-        cri_value = 50000000000  # 500억 원 기본값
+    if len(reference_values) == 3:
+        # 3개 모두 조회 성공 시 평균값 사용 (정상 케이스)
+        cri_value = sum(reference_values) / len(reference_values)
+        print(f"[INFO] 기준 거래량 (평균): {cri_value:,.0f} (3개 코인 기준)")
+    elif len(reference_values) > 0:
+        # 일부만 조회 성공 시 가장 작은 거래량 사용 (보수적 접근)
+        cri_value = min(reference_values)
+        print(f"[INFO] 기준 거래량 (최소값): {cri_value:,.0f} ({len(reference_values)}개 중 최소)")
+    else:
+        # 모두 실패 시 매우 보수적 기준값
+        print("[경고] 모든 기준 코인 조회 실패 - 보수적 기준값 적용")
+        cri_value = 15000000000  # 150억 (매우 보수적 최소 기준)
     
     # ========== STEP 3: 전체 티커 수집 및 1차 필터링 ==========
     try:
@@ -1789,12 +1800,15 @@ def get_best_ticker():
             return None
             
     except Exception as e:
-        send_discord_message(f"티커 목록 조회 실패: {e}")
+        print(f"[오류] 티커 목록 조회 실패: {e}")
+        send_discord_message(f"❌ 시스템 오류: 티커 목록 조회 실패")
         return None
     
-    # ========== STEP 4: 배치 데이터 수집 및 다층 필터링 ==========
+    # ========== STEP 4: 배치 데이터 수집 및 강화된 다층 필터링 ==========
     filtering_tickers = []
     failed_tickers = []
+    excluded_surge = []  # 급등 제외 종목
+    excluded_low_vol = []  # 저변동성 제외 종목
     batch_size = 10  # API 부하 분산
     
     for i in range(0, len(candidate_tickers), batch_size):
@@ -1802,68 +1816,107 @@ def get_best_ticker():
         
         for ticker in batch:
             try:
-                # 병렬 데이터 수집
-                df = pyupbit.get_ohlcv(ticker, interval="day", count=2)  # 2일 데이터로 추세 확인
+                # 병렬 데이터 수집 (3일 데이터로 전일 분석 강화)
+                df = pyupbit.get_ohlcv(ticker, interval="day", count=3)
                 cur_price = pyupbit.get_current_price(ticker)
 
                 time.sleep(second)
 
                 # 데이터 검증
-                if (df is None or df.empty or cur_price is None or 
+                if (df is None or df.empty or len(df) < 2 or cur_price is None or 
                     'open' not in df.columns or 'value' not in df.columns or
-                    'high' not in df.columns or 'low' not in df.columns):
+                    'high' not in df.columns or 'low' not in df.columns or
+                    'close' not in df.columns):
                     failed_tickers.append(ticker)
                     continue
                 
-                # 최신 데이터 추출
-                latest = df.iloc[-1]
-                prev = df.iloc[-2] if len(df) > 1 else latest
+                # 데이터 추출 (최신순)
+                today = df.iloc[-1]      # 오늘 (당일)
+                yesterday = df.iloc[-2]  # 어제 (전일)
+                prev = df.iloc[-3] if len(df) > 2 else yesterday  # 전전일
                 
-                df_open = latest['open']
-                df_high = latest['high']
-                df_low = latest['low']
-                current_value = latest['value']
+                today_open = today['open']
+                today_high = today['high']
+                today_low = today['low']
+                current_value = today['value']
                 
-                # ========== 다층 필터링 시스템 ==========
+                yesterday_high = yesterday['high']
+                yesterday_low = yesterday['low']
+                yesterday_close = yesterday['close']
                 
-                # 1) 가격 범위 필터 (개선된 동적 범위)
-                volatility = (df_high - df_low) / df_open
-                if volatility > 0.15:  # 고변동성
-                    price_range = (0.88, 1.25)
-                elif volatility < 0.05:  # 저변동성
-                    price_range = (0.95, 1.15)
-                else:  # 일반 변동성
-                    price_range = (0.92, 1.20)
+                # ========== 신규 필터 1: 급등 방지 (당일 시가 대비 3% 이상 상승 제외) ==========
+                daily_surge_rate = ((cur_price - today_open) / today_open) * 100
+                if daily_surge_rate >= 3.0:
+                    excluded_surge.append(f"{ticker}({daily_surge_rate:.1f}%)")
+                    print(f"[EXCLUDE-SURGE] {ticker}: 당일 급등 {daily_surge_rate:.1f}% (>3%)")
+                    continue
                 
-                price_ratio = cur_price / df_open
+                # ========== 신규 필터 2: 최소 변동성 보장 (전일 고저가 변동폭 1% 미만 제외) ==========
+                if yesterday_high > 0 and yesterday_low > 0:
+                    yesterday_volatility = ((yesterday_high - yesterday_low) / yesterday_low) * 100
+                    if yesterday_volatility < 1.0:
+                        excluded_low_vol.append(f"{ticker}({yesterday_volatility:.2f}%)")
+                        print(f"[EXCLUDE-LOWVOL] {ticker}: 전일 변동폭 {yesterday_volatility:.2f}% (<1%)")
+                        continue
+                else:
+                    # 데이터 이상 시 제외
+                    failed_tickers.append(ticker)
+                    continue
+                
+                # ========== 기존 다층 필터링 시스템 (개선) ==========
+                
+                # 1) 가격 범위 필터 (급등 방지 정책과 일관성 유지)
+                today_volatility = (today_high - today_low) / today_open if today_open > 0 else 0
+                
+                # 급등 방지(3% 상한)와 일관된 범위 설정
+                if today_volatility > 0.10:  # 고변동성: 하락 여유는 주되 상승은 제한
+                    price_range = (0.85, 1.029)  # -15% ~ +2.9%
+                elif today_volatility < 0.03:  # 저변동성: 안정적 범위
+                    price_range = (0.98, 1.025)  # -2% ~ +2.5%
+                else:  # 일반 변동성: 균형잡힌 범위
+                    price_range = (0.92, 1.028)  # -8% ~ +2.8%
+                
+                price_ratio = cur_price / today_open
                 price_cond = price_range[0] < price_ratio < price_range[1]
                 
-                # 2) 거래량 필터 (개선된 동적 기준)
-                volume_multiplier = 1.2 if volatility > 0.10 else 1.0
+                # 2) 거래량 필터 (변동성 고려 동적 기준)
+                volume_multiplier = 1.2 if today_volatility > 0.10 else 1.0
                 value_cond = current_value > (cri_value * volume_multiplier)
                 
-                # 3) 추세 필터 (신규 추가)
-                if len(df) > 1:
-                    trend_strength = (latest['close'] - prev['close']) / prev['close']
-                    trend_cond = -0.08 < trend_strength < 0.12  # 급격한 변동 제외
+                # 3) 추세 필터 (전일 대비 건전한 상승률 확인)
+                trend_strength = (today['close'] - yesterday_close) / yesterday_close
+                # 급등 제외 후 건전한 상승 범위 확장
+                trend_cond = -0.08 < trend_strength < 0.08  # 건전한 변동 범위
+                
+                # 4) 유동성 필터 (개선)
+                liquidity_score = current_value / (today_high - today_low + 0.001)
+                liquidity_cond = liquidity_score > 1000000000
+                
+                # 5) 연속성 필터 (신규 추가 - 급격한 변동 패턴 제외)
+                if len(df) > 2:
+                    prev_change = (yesterday_close - prev['close']) / prev['close']
+                    today_change = trend_strength
+                    # 연속 급등/급락 패턴 제외
+                    continuity_cond = not (abs(prev_change) > 0.05 and abs(today_change) > 0.05)
                 else:
-                    trend_cond = True
+                    continuity_cond = True
                 
-                # 4) 유동성 필터 (신규 추가)
-                liquidity_score = current_value / (df_high - df_low + 0.001)  # 0으로 나누기 방지
-                liquidity_cond = liquidity_score > 1000000000  # 유동성 임계값
-                
-                # ========== 통합 조건 검사 ==========
-                if price_cond and value_cond and trend_cond and liquidity_cond:
+                # ========== 통합 조건 검사 (강화) ==========
+                if (price_cond and value_cond and trend_cond and 
+                    liquidity_cond and continuity_cond):
+                    
                     filtering_tickers.append({
                         'ticker': ticker,
                         'price_ratio': price_ratio,
                         'volume': current_value,
-                        'volatility': volatility,
-                        'trend': trend_strength if 'trend_strength' in locals() else 0,
-                        'liquidity': liquidity_score
+                        'today_volatility': today_volatility,
+                        'yesterday_volatility': yesterday_volatility,
+                        'trend': trend_strength,
+                        'liquidity': liquidity_score,
+                        'daily_surge': daily_surge_rate
                     })
-                    print(f"[PASS] {ticker}: P{price_ratio:.3f}, V{current_value/1e9:.1f}B")
+                    print(f"[PASS] {ticker}: P{price_ratio:.3f}, V{current_value/1e9:.1f}B, "
+                          f"당일{daily_surge_rate:+.1f}%, 전일변동{yesterday_volatility:.1f}%")
                 
             except Exception as e:
                 print(f"[경고] {ticker} 처리 중 오류: {e}")
@@ -1874,9 +1927,21 @@ def get_best_ticker():
         if i + batch_size < len(candidate_tickers):
             time.sleep(second * 2)
     
-    # 실패 통계
-    if failed_tickers:
-        print(f"[INFO] 데이터 수집 실패: {len(failed_tickers)}개 종목")
+    # ========== 필터링 통계 출력 (개선) ==========
+    print(f"\n[필터링 결과]")
+    print(f"├─ 총 분석 대상: {len(candidate_tickers)}개")
+    print(f"├─ 급등 제외(≥3%): {len(excluded_surge)}개")
+    print(f"├─ 저변동 제외(<1%): {len(excluded_low_vol)}개")
+    print(f"├─ 데이터 오류: {len(failed_tickers)}개")
+    print(f"└─ 통과: {len(filtering_tickers)}개")
+    
+    if excluded_surge:
+        print(f"[급등 제외 종목] {', '.join(excluded_surge[:5])}" + 
+              (f" 외 {len(excluded_surge)-5}개" if len(excluded_surge) > 5 else ""))
+    
+    if excluded_low_vol:
+        print(f"[저변동 제외 종목] {', '.join(excluded_low_vol[:5])}" + 
+              (f" 외 {len(excluded_low_vol)-5}개" if len(excluded_low_vol) > 5 else ""))
     
     # ========== STEP 5: 필터링 결과 후처리 ==========
     if not filtering_tickers:
@@ -1894,10 +1959,12 @@ def get_best_ticker():
     
     elif len(filtered_list) == 1:
         selected_ticker = filtered_list[0]
+        filtered_time = datetime.now().strftime('%m/%d %H시%M분%S초')
         send_discord_message(f"{filtered_time} [단일 선택: {selected_ticker}]")
+        print(f"[SUCCESS] 단일 매수 대상: {selected_ticker}")
         return selected_ticker
     
-    # ========== STEP 6: 다중 종목 중 최적 선택 (고도화된 알고리즘) ==========
+    # ========== STEP 6: 다중 종목 중 최적 선택 (더욱 고도화된 알고리즘) ==========
     print(f"[INFO] 최종 후보: {len(filtered_list)}개 종목")
     
     best_ticker = None
@@ -1919,51 +1986,93 @@ def get_best_ticker():
             if ticker_meta is None:
                 continue
             
-            # ========== 복합 스코어링 시스템 ==========
+            # ========== 강화된 복합 스코어링 시스템 ==========
             
-            # 1) RSI 점수 (30-70 구간에서 낮을수록 좋음)
-            if current_rsi < 30:
+            # 1) RSI 점수 (더 세밀한 구간 분할)
+            if current_rsi < 25:
+                rsi_score = 12  # 강한 과매도 보너스
+            elif current_rsi < 35:
                 rsi_score = 10  # 과매도 보너스
             elif current_rsi < 50:
-                rsi_score = 8 - (current_rsi - 30) * 0.2
-            elif current_rsi < 70:
-                rsi_score = 5 - (current_rsi - 50) * 0.15
+                rsi_score = 8 - (current_rsi - 35) * 0.133
+            elif current_rsi < 65:
+                rsi_score = 6 - (current_rsi - 50) * 0.133
+            elif current_rsi < 75:
+                rsi_score = 2 - (current_rsi - 65) * 0.2
             else:
-                rsi_score = 0  # 과매수 구간
+                rsi_score = -2  # 과매수 패널티
             
-            # 2) 가격 위치 점수 (적정 구간 선호)
-            price_pos_score = 5 - abs(ticker_meta['price_ratio'] - 1.05) * 10
-            price_pos_score = max(0, min(5, price_pos_score))
+            # 2) 가격 위치 점수 (급등 회피 강화, 1.01 타겟)
+            price_pos_score = 8 - abs(ticker_meta['price_ratio'] - 1.01) * 20  # 1% 상승 타겟
+            price_pos_score = max(0, min(8, price_pos_score))
             
-            # 3) 거래량 점수 (로그 스케일)
+            # 3) 거래량 점수 (로그 스케일, 더 정교함)
             import math
-            volume_score = min(5, math.log10(ticker_meta['volume'] / 1e9))
+            volume_score = min(5, math.log10(ticker_meta['volume'] / 1e9) * 1.2)
+            volume_score = max(0, volume_score)
             
-            # 4) 변동성 점수 (적절한 변동성 선호)
-            vol = ticker_meta['volatility']
-            if 0.05 <= vol <= 0.12:
-                volatility_score = 5
-            elif 0.03 <= vol <= 0.15:
-                volatility_score = 3
+            # 4) 변동성 점수 (최적 구간 조정)
+            today_vol = ticker_meta['today_volatility']
+            yesterday_vol = ticker_meta['yesterday_volatility']
+            
+            # 오늘 변동성 점수
+            if 0.04 <= today_vol <= 0.10:
+                today_vol_score = 5
+            elif 0.02 <= today_vol <= 0.15:
+                today_vol_score = 3
             else:
-                volatility_score = 1
+                today_vol_score = 1
             
-            # 5) 추세 점수
+            # 어제 변동성 점수 (최소 1% 보장된 상태)
+            if 0.01 <= yesterday_vol <= 0.08:
+                yesterday_vol_score = 3
+            elif 0.008 <= yesterday_vol <= 0.12:
+                yesterday_vol_score = 2
+            else:
+                yesterday_vol_score = 1
+            
+            volatility_score = (today_vol_score * 0.7 + yesterday_vol_score * 0.3)
+            
+            # 5) 추세 점수 (더 보수적 접근)
             trend = ticker_meta.get('trend', 0)
-            if -0.02 <= trend <= 0.05:  # 약간의 상승 추세 선호
-                trend_score = 3
-            elif -0.05 <= trend <= 0.08:
+            if -0.01 <= trend <= 0.03:  # 완만한 상승 선호
+                trend_score = 4
+            elif -0.03 <= trend <= 0.05:
                 trend_score = 2
+            elif -0.05 <= trend <= -0.01:  # 약간의 하락도 기회로
+                trend_score = 3
             else:
                 trend_score = 0
             
-            # ========== 가중 종합 점수 ==========
+            # 6) 신규: 급등 방지 보너스 점수 (당일 상승률이 낮을수록 보너스)
+            surge_rate = ticker_meta.get('daily_surge', 0)
+            if surge_rate < -1:  # 하락 중
+                surge_bonus = 2
+            elif surge_rate < 0.5:  # 소폭 상승
+                surge_bonus = 3
+            elif surge_rate < 1.5:  # 적당한 상승
+                surge_bonus = 1
+            else:  # 2-3% 구간 (이미 3% 이상은 제외됨)
+                surge_bonus = 0
+            
+            # 7) 신규: 변동성 일관성 보너스
+            vol_consistency = abs(today_vol - yesterday_vol)
+            if vol_consistency < 0.02:  # 일관된 변동성
+                consistency_bonus = 2
+            elif vol_consistency < 0.05:
+                consistency_bonus = 1
+            else:
+                consistency_bonus = 0
+            
+            # ========== 가중 종합 점수 (조정) ==========
             composite_score = (
-                rsi_score * 0.35 +          # RSI 가중치 35%
-                price_pos_score * 0.25 +    # 가격 위치 25%
-                volume_score * 0.20 +       # 거래량 20%
-                volatility_score * 0.15 +   # 변동성 15%
-                trend_score * 0.05          # 추세 5%
+                rsi_score * 0.30 +           # RSI 가중치 30%
+                price_pos_score * 0.20 +     # 가격 위치 20%
+                volume_score * 0.15 +        # 거래량 15%
+                volatility_score * 0.15 +    # 변동성 15%
+                trend_score * 0.10 +         # 추세 10%
+                surge_bonus * 0.06 +         # 급등방지 보너스 6%
+                consistency_bonus * 0.04     # 일관성 보너스 4%
             )
             
             scoring_data.append({
@@ -1974,7 +2083,10 @@ def get_best_ticker():
                 'price_pos_score': price_pos_score,
                 'volume_score': volume_score,
                 'volatility_score': volatility_score,
-                'trend_score': trend_score
+                'trend_score': trend_score,
+                'surge_bonus': surge_bonus,
+                'consistency_bonus': consistency_bonus,
+                'daily_surge': surge_rate
             })
             
             # 최고 점수 갱신
@@ -1982,7 +2094,7 @@ def get_best_ticker():
                 best_ticker = ticker
                 best_score = composite_score
             
-            print(f"[SCORE] {ticker}: RSI{current_rsi:.1f}, 종합{composite_score:.2f}")
+            print(f"[SCORE] {ticker}: RSI{current_rsi:.1f}, 당일{surge_rate:+.1f}%, 종합{composite_score:.2f}")
             
         except Exception as e:
             print(f"[경고] {ticker} 스코어링 오류: {e}")
@@ -1990,7 +2102,7 @@ def get_best_ticker():
         
         time.sleep(second)
     
-    # ========== STEP 7: 최종 검증 및 리스크 체크 ==========
+    # ========== STEP 7: 최종 검증 및 리스크 체크 (강화) ==========
     if best_ticker is None:
         print("[INFO] 스코어링 완료된 종목이 없습니다")
         return None
@@ -1998,27 +2110,40 @@ def get_best_ticker():
     # 최고 점수 종목 상세 정보 출력
     best_data = next(item for item in scoring_data if item['ticker'] == best_ticker)
     
-    # 위험도 최종 검증
+    # 위험도 최종 검증 (다중 조건)
+    risk_flags = []
+    
     if best_data['rsi'] > 75:
-        print(f"[경고] {best_ticker} RSI 과매수 상태 (RSI: {best_data['rsi']:.1f})")
+        risk_flags.append(f"RSI과매수({best_data['rsi']:.1f})")
+    
+    if best_data['daily_surge'] > 2.5:  # 3% 미만이지만 높은 상승률
+        risk_flags.append(f"높은당일상승({best_data['daily_surge']:.1f}%)")
+    
+    # 위험 요소가 있으면 차선책 검토
+    if risk_flags:
+        print(f"[위험요소] {best_ticker}: {', '.join(risk_flags)}")
+        
         # 차선책 선택
-        alternative = sorted(scoring_data, key=lambda x: x['composite_score'], reverse=True)
-        for alt in alternative[1:]:  # 2번째부터 확인
-            if alt['rsi'] < 70:
+        sorted_candidates = sorted(scoring_data, key=lambda x: x['composite_score'], reverse=True)
+        for alt in sorted_candidates[1:]:  # 2번째부터 확인
+            if alt['rsi'] < 70 and alt['daily_surge'] < 2.0:
+                print(f"[대안선택] {alt['ticker']} (원래 {best_ticker} 대신)")
                 best_ticker = alt['ticker']
                 best_data = alt
-                print(f"[INFO] 대안 선택: {best_ticker}")
                 break
     
-    # 성공 메시지
-    success_msg = (f"{filtered_time} [최종 선택: {best_ticker}]\n"
-                  f"RSI: {best_data['rsi']:.1f}, 종합점수: {best_data['composite_score']:.2f}")
+    # 성공 메시지 (최종 결과만 디스코드 전송)
+    filtered_time = datetime.now().strftime('%m/%d %H시%M분%S초')
+    success_msg = (f"🎯 {filtered_time} 최종 선택: {best_ticker}\n"
+                  f"📊 RSI: {best_data['rsi']:.1f} | 당일: {best_data['daily_surge']:+.1f}% | "
+                  f"점수: {best_data['composite_score']:.2f}")
     
     send_discord_message(success_msg)
     
     print(f"[SUCCESS] 최적 매수 대상: {best_ticker}")
     print(f"         종합 점수: {best_data['composite_score']:.2f}")
     print(f"         RSI: {best_data['rsi']:.1f}")
+    print(f"         당일 변동: {best_data['daily_surge']:+.1f}%")
     
     return best_ticker
 
