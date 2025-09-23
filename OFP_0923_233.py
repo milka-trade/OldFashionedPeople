@@ -1910,7 +1910,7 @@ def get_best_ticker():
         return None
     
     # ========== STEP 2: 기준 거래량 설정 (평균값 기반, 실패시 최소값 적용) ==========
-    reference_tickers = ["KRW-XLM", "KRW-HBAR", "KRW-ADA"]  # 안정적 거래량 기준
+    reference_tickers = ["KRW-SAND", "KRW-HBAR", "KRW-ETC"]  # 안정적 거래량 기준
     reference_values = []
     
     for ref_ticker in reference_tickers:
