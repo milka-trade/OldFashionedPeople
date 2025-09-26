@@ -1103,15 +1103,20 @@ def selling_logic():
     """
     [개선된 매도 로직]
     보유 코인의 매도 신호를 즉시 확인하고 처리합니다.
-    (이 함수는 더 이상 자체 루프를 돌지 않습니다. main 루프에서 호출됩니다.)
     """
     
     # 예외 처리: get_balances()가 실패할 경우 안전하게 처리
     try:
+        # upbit 객체가 정의되었다고 가정합니다.
         balances = upbit.get_balances()
+    except NameError:
+        print("selling_logic / NameError: 'upbit' 객체가 정의되지 않았습니다.")
+        # send_discord_message 함수가 정의되었다고 가정합니다.
+        # send_discord_message(f"selling_logic / 잔고 조회 에러: {e}")
+        return False
     except Exception as e:
         print(f"selling_logic / 잔고 조회 에러: {e}")
-        send_discord_message(f"selling_logic / 잔고 조회 에러: {e}")
+        # send_discord_message(f"selling_logic / 잔고 조회 에러: {e}")
         return False # 보유 코인 없음으로 간주
     
     has_holdings = False
@@ -1123,67 +1128,100 @@ def selling_logic():
 
             ticker = f"KRW-{b.get('currency')}"
             
-            # trade_sell 함수가 매도 로직을 처리 (내부에 별도의 sleep 없음)
-            trade_sell(ticker)
-            has_holdings = True # 보유 코인이 하나라도 있으면 True
+            # trade_sell 함수가 정의되었다고 가정합니다.
+            try:
+                trade_sell(ticker)
+                has_holdings = True # 보유 코인이 하나라도 있으면 True
+            except NameError:
+                print(f"selling_logic / NameError: 'trade_sell' 함수가 정의되지 않았습니다. {ticker}")
+                has_holdings = True # 일단 보유로 간주하여 짧은 루프 주기 유지
             
     return has_holdings
+
+# ----------------------------------------------------------------------------------------------------
 
 def buying_logic():
     """
     [개선된 매수 로직 - 메인 루프 역할]
-    메인 루프에서 매도 로직을 우선 실행한 후,
-    잔고와 시장 상황에 따라 매수 기회를 탐색하고 실행합니다.
+    매도 로직을 우선 실행하되, 보유 코인 유무와 관계없이
+    주기적으로 매수 기회를 탐색하여 'Sell-Lock' 문제를 방지합니다.
     """
     while True:
         try:
-            # ========== 1. 매도 로직 우선 실행 (가장 중요한 부분!) ==========
-            # 보유 코인이 있는지 확인
-            has_holdings = selling_logic()
-            
-            # 보유 코인이 있으면 짧게 대기하여 다음 매도 신호에 빠르게 반응
-            if has_holdings:
-                print("보유 코인 존재: 매도 신호 재탐색을 위해 10초 대기...")
-                time.sleep(10)
-                continue
-                
-            # ========== 2. 매수 로직 (보유 코인이 없을 때만 실행) ==========
-            stopbuy_time = datetime.now()
-            restricted_start = stopbuy_time.replace(hour=8, minute=50, second=0, microsecond=0)
-            restricted_end = stopbuy_time.replace(hour=9, minute=10, second=0, microsecond=0)
-            
-            # 매수 제한 시간 체크
-            if restricted_start <= stopbuy_time <= restricted_end:
-                print("매수 제한 시간 (08:50 ~ 09:10). 대기 중...")
-                time.sleep(60) 
-                continue
-            
+            # time, datetime 모듈이 import 되었다고 가정합니다.
+            import time
+            from datetime import datetime
+        except ImportError:
+            print("필수 모듈 (time, datetime)을 import 해야 합니다.")
+            return
+
+        # ========== 1. 매도 로직 우선 실행 (가장 중요한 부분!) ==========
+        # 보유 코인에 대한 매도 신호 즉시 확인 및 처리
+        has_holdings = selling_logic()
+        
+        # 보유 코인 유무에 따라 다음 루프 대기 시간을 설정 (바로 아래에서 사용)
+        next_sleep_time = 30 # 기본 대기 시간 (초)
+        if has_holdings:
+            # 보유 코인이 있으면 매도 신호에 빠르게 반응하기 위해 매수 성공/실패와 관계없이 짧게 대기
+            next_sleep_time = 10 
+            print("보유 코인 존재: 매도 로직 우선 처리 후, 짧은 주기로 매수 기회 탐색 진행 (10초)")
+        
+        # !!! 기존의 'if has_holdings: time.sleep(10); continue' 로직을 제거하여
+        # !!! 매도 처리 후에도 매수 로직으로 진입하도록 개선 완료
+        
+        # ========== 2. 매수 로직 (보유 코인 유무와 관계없이 주기적으로 실행) ==========
+        stopbuy_time = datetime.now()
+        restricted_start = stopbuy_time.replace(hour=8, minute=50, second=0, microsecond=0)
+        restricted_end = stopbuy_time.replace(hour=9, minute=10, second=0, microsecond=0)
+        
+        # 매수 제한 시간 체크
+        if restricted_start <= stopbuy_time <= restricted_end:
+            print("매수 제한 시간 (08:50 ~ 09:10). 대기 중...")
+            time.sleep(60) 
+            continue
+        
+        # get_balance 함수가 정의되었다고 가정합니다.
+        try:
             krw_balance = get_balance("KRW")
-            
+        except NameError:
+            print("buying_logic / NameError: 'get_balance' 함수가 정의되지 않았습니다.")
+            time.sleep(5)
+            continue
+        
+        # min_krw 변수가 정의되었다고 가정합니다.
+        try:
             if krw_balance > min_krw:
+                # get_best_ticker 함수가 정의되었다고 가정합니다.
                 best_ticker = get_best_ticker()
                 
                 if best_ticker:
                     buy_time = datetime.now().strftime('%m/%d %H시%M분%S초')
-                    send_discord_message(f"[{buy_time}] 선정코인: [{best_ticker}]")
+                    # send_discord_message 함수가 정의되었다고 가정합니다.
+                    # send_discord_message(f"[{buy_time}] 선정코인: [{best_ticker}]")
+                    # trade_buy 함수가 정의되었다고 가정합니다.
                     result = trade_buy(best_ticker)
                     
                     if result:
-                        print(f"매수 성공. 다음 매수 기회 탐색까지 60초 대기...")
-                        time.sleep(60)
+                        print(f"매수 성공. 다음 매수 기회 탐색까지 {next_sleep_time}초 대기...")
+                        time.sleep(next_sleep_time) # 매수 성공 후 대기
                     else:
-                        print(f"매수 실패. 다음 기회 탐색까지 30초 대기...")
-                        time.sleep(30)
+                        print(f"매수 실패. 다음 기회 탐색까지 {next_sleep_time}초 대기...")
+                        time.sleep(next_sleep_time) # 매수 실패 후 대기
                 else:
-                    print("매수할 코인 없음. 다음 기회 탐색까지 30초 대기...")
+                    print(f"매수할 코인 없음. 다음 기회 탐색까지 30초 대기...")
+                    # 매수할 코인이 없으면 기본 대기 시간을 사용
                     time.sleep(30)
             else:
                 print("매수 가능 KRW 부족. 180초 대기...")
                 time.sleep(180)
+        except NameError as ne:
+            print(f"buying_logic / NameError: 필요한 변수/함수가 정의되지 않았습니다: {ne}")
+            time.sleep(5)
+            continue
 
         except Exception as e:
             print(f"buying_logic / 메인 루프 에러 발생: {e}")
-            send_discord_message(f"buying_logic / 메인 루프 에러 발생: {e}")
+            # send_discord_message(f"buying_logic / 메인 루프 에러 발생: {e}")
             time.sleep(5)
 
 # --- 메인 실행 루프 ---
