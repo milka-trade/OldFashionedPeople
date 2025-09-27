@@ -36,8 +36,8 @@ def get_user_input():
     while True:
         try:
             min_rate = float(input("최소 수익률 (예: 0.7): "))
-            max_rate = float(input("최대 수익률 (예: 2.5):"))
-            sell_time = int(input("매도감시횟수 (예: 10): "))
+            max_rate = float(input("최대 수익률 (예: 2.5): "))
+            sell_time = int(input("매도감시횟수 (예: 20): "))
             rsi_sell_s =int(input("RSI 매도 감시 시작 (예: 65): "))
             rsi_sell_e =int(input("RSI 매도 감시 종료 (예: 80): "))
             break
@@ -641,7 +641,7 @@ def trade_sell(ticker):
     signal_text = " + ".join(signals) + f" (강도:{sell_strength}/{required_score})"
     
     # ========== 매도 실행 루프 ==========
-    max_attempts = min(sell_time, 15)  # 최대 15회로 제한
+    max_attempts = min(sell_time, 30)  # 최대 30회로 제한
     attempts = 0
     
     while attempts < max_attempts:
@@ -674,7 +674,7 @@ def trade_sell(ticker):
         attempts += 1
     
     # 최소 수익률 이상이면 시간 종료 후에도 매도
-    if profit_rate >= min_rate * 0.5:  # 최소 수익률의 50% 이상이면 매도 (완화)
+    if profit_rate >= min_rate * 0.7:  # 최소 수익률의 70% 이상이면 매도 (완화)
         sell_order = upbit.sell_market_order(ticker, buyed_amount)
         final_msg = f"⚠️ **[시간종료매도]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}"
         print(final_msg)
