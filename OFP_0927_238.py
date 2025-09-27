@@ -5,10 +5,10 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 import requests
-import ta
-import pandas as pd
+# import ta
+# import pandas as pd
 import threading
-from concurrent.futures import ThreadPoolExecutor
+# from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 
@@ -35,8 +35,8 @@ rsi_buy_e = 45
 def get_user_input():
     while True:
         try:
-            min_rate = float(input("최소 수익률 (예: 0.4): "))
-            max_rate = float(input("최대 수익률 (예: 2.1):"))
+            min_rate = float(input("최소 수익률 (예: 0.7): "))
+            max_rate = float(input("최대 수익률 (예: 2.5):"))
             sell_time = int(input("매도감시횟수 (예: 10): "))
             rsi_sell_s =int(input("RSI 매도 감시 시작 (예: 65): "))
             rsi_sell_e =int(input("RSI 매도 감시 종료 (예: 80): "))
@@ -70,7 +70,7 @@ def get_balance(ticker):
 
 # 상위 코인 목록 (동적으로 업데이트)
 def get_top_volume_tickers():
-    """거래대금 기준 상위 10개 코인 동적 추출"""
+    """거래대금 기준 상위 20개 코인 동적 추출"""
     try:
         tickers = pyupbit.get_tickers(fiat="KRW")
         ticker_24h = []
@@ -89,7 +89,7 @@ def get_top_volume_tickers():
         
         # 거래대금 기준 상위 30개 선택
         ticker_24h.sort(key=lambda x: x[1], reverse=True)
-        return [ticker[0] for ticker in ticker_24h[:10]]
+        return [ticker[0] for ticker in ticker_24h[:20]]
     
     except Exception as e:
         print(f"동적 티커 추출 실패: {e}")
@@ -368,8 +368,8 @@ def get_best_ticker():
         discord_msg += f"1시간: RSI{best['current_rsi_1h']:.1f} BB{best['bb_position_1h']:.0f}%\n"
         discord_msg += f"{best['signals'][0] if best['signals'] else '반등신호'}"
         
-        send_discord_message(discord_msg)
-        print("📱 반등 알림 전송 완료")
+        # send_discord_message(discord_msg)
+        print(discord_msg)
         
     except Exception as e:
         print(f"📱 알림 전송 실패: {e}")
