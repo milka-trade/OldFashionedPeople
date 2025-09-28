@@ -70,35 +70,116 @@ def get_balance(ticker):
 
 # 상위 코인 목록 (동적으로 업데이트)
 def get_top_volume_tickers():
-    """거래대금 기준 상위 20개 코인 동적 추출"""
+    """
+    스캘핑 거래를 위한 최적화된 종목 선정
+    - 누적 거래대금 기반 안정적인 메이저 코인 우선
+    - 변동성과 유동성의 균형점을 고려한 종목 선별
+    - 승률 80% 이상을 목표로 한 보수적 접근
+    """
     try:
+        # 메이저 코인 우선순위 리스트 (안정성 + 유동성 기준)
+        major_coins_priority = [
+            "KRW-BTC",   # 비트코인 - 최고 안정성
+            "KRW-ETH",   # 이더리움 - 높은 유동성
+            "KRW-XRP",   # 리플 - 안정적 거래패턴
+            "KRW-ADA",   # 카르다노 - 중간 변동성
+            "KRW-LINK",  # 체인링크 - 꾸준한 거래량
+            "KRW-DOT",   # 폴카닷 - 안정적 메이저코인
+            "KRW-AVAX",  # 아발란체 - 적당한 변동성
+            "KRW-MATIC", # 폴리곤 - 꾸준한 거래
+            "KRW-ATOM",  # 코스모스 - 안정적 패턴
+            "KRW-LTC"    # 라이트코인 - 낮은 변동성
+        ]
+        
         tickers = pyupbit.get_tickers(fiat="KRW")
-        ticker_24h = []
+        ticker_scores = []
         
         for ticker in tickers:
             try:
-                ticker_data = pyupbit.get_ohlcv(ticker, interval="day", count=1)
-                if ticker_data is not None and len(ticker_data) > 0:
-                    volume = ticker_data['volume'].iloc[-1]
-                    price = ticker_data['close'].iloc[-1]
-                    volume_krw = volume * price
-                    ticker_24h.append((ticker, volume_krw))
+                # 30일 데이터로 안정성 평가
+                ticker_data = pyupbit.get_ohlcv(ticker, interval="day", count=30)
+                if ticker_data is None or len(ticker_data) < 30:
+                    continue
+                
+                # 최근 7일과 30일 평균 거래대금 계산
+                recent_7d = ticker_data[-7:]
+                all_30d = ticker_data
+                
+                volume_7d_avg = (recent_7d['volume'] * recent_7d['close']).mean()
+                volume_30d_avg = (all_30d['volume'] * all_30d['close']).mean()
+                
+                # 변동성 계산 (30일 기준 일일 변동률의 표준편차)
+                daily_changes = ((ticker_data['close'] - ticker_data['close'].shift(1)) / ticker_data['close'].shift(1)).dropna()
+                volatility = daily_changes.std()
+                
+                # 스코어링 시스템
+                score = 0
+                
+                # 1. 메이저 코인 보너스 (최대 1000점)
+                if ticker in major_coins_priority:
+                    priority_bonus = 1000 - (major_coins_priority.index(ticker) * 100)
+                    score += priority_bonus
+                
+                # 2. 거래대금 점수 (30일 평균 기준, 최대 500점)
+                # 100억원 이상이면 만점, 그 이하는 비례점수
+                volume_score = min(500, (volume_30d_avg / 10000000000) * 500)
+                score += volume_score
+                
+                # 3. 안정성 점수 (변동성 역산, 최대 300점)
+                # 변동성이 낮을수록 높은 점수 (0.05 기준)
+                stability_score = max(0, 300 - (volatility * 6000))
+                score += stability_score
+                
+                # 4. 거래 일관성 점수 (최대 200점)
+                # 7일 평균과 30일 평균의 차이가 적을수록 높은 점수
+                consistency_ratio = min(volume_7d_avg, volume_30d_avg) / max(volume_7d_avg, volume_30d_avg)
+                consistency_score = consistency_ratio * 200
+                score += consistency_score
+                
+                # 5. 최소 거래대금 필터 (일 10억원 이상)
+                if volume_30d_avg < 1000000000:
+                    continue
+                
+                # 6. 최대 변동성 필터 (일 변동성 10% 이상은 제외)
+                if volatility > 0.10:
+                    continue
+                
+                ticker_scores.append({
+                    'ticker': ticker,
+                    'score': score,
+                    'volume_30d': volume_30d_avg,
+                    'volatility': volatility,
+                    'is_major': ticker in major_coins_priority
+                })
+                
                 time.sleep(0.01)
-            except:
+                
+            except Exception as e:
                 continue
         
-        # 거래대금 기준 상위 30개 선택
-        ticker_24h.sort(key=lambda x: x[1], reverse=True)
-        return [ticker[0] for ticker in ticker_24h[:20]]
-    
+        # 스코어 기준으로 정렬하여 상위 10개 선택
+        ticker_scores.sort(key=lambda x: x['score'], reverse=True)
+        selected_tickers = [item['ticker'] for item in ticker_scores[:10]]
+        
+        # 결과 출력 (디버깅용)
+        print("=== 선정된 스캘핑 최적화 종목 ===")
+        for i, item in enumerate(ticker_scores[:10], 1):
+            major_mark = "★" if item['is_major'] else " "
+            print(f"{i:2d}. {major_mark} {item['ticker']:10} | "
+                  f"점수: {item['score']:6.0f} | "
+                  f"30일평균거래대금: {item['volume_30d']/100000000:6.0f}억 | "
+                  f"변동성: {item['volatility']*100:4.1f}%")
+        
+        return selected_tickers
+        
     except Exception as e:
-        print(f"동적 티커 추출 실패: {e}")
-        # 실패시 기본 리스트 반환
+        print(f"최적화된 티커 추출 실패: {e}")
+        # 실패시 검증된 안정적인 메이저 코인 반환
         return [
-            "KRW-BTC", "KRW-ETH", "KRW-SOL", "KRW-XRP", "KRW-ADA", 
-            "KRW-LINK", "KRW-SUI", "KRW-ONDO", "KRW-SEI", "KRW-VIRTUAL"
+            "KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-ADA", "KRW-LINK",
+            "KRW-DOT", "KRW-AVAX", "KRW-MATIC", "KRW-ATOM", "KRW-LTC"
         ]
-
+    
 def get_best_ticker():
     """
     🎯 개선된 반등 포착 시스템 - 매수 조건 완화 및 신호 강도 개선
@@ -519,7 +600,11 @@ def trade_buy(ticker):
     
 def trade_sell(ticker):
     """
-    개선된 매도 로직 - 수익 확보 및 손절 최적화
+    지능형 적응형 매도 시스템
+    - 최소수익률 기준 엄격 적용
+    - 손실 구간별 차등 전략
+    - 반등 확률 기반 홀딩/매도 결정
+    - 시장 상황 적응형 매도 기준
     """
 
     def calculate_rsi_unified(closes, period=14):
@@ -540,6 +625,31 @@ def trade_sell(ticker):
         rsi = 100 - (100 / (1 + rs))
         return rsi
 
+    def calculate_recovery_probability(df, current_price, avg_buy_price):
+        """반등 확률 계산 - 과거 패턴 분석"""
+        if df is None or len(df) < 20:
+            return 0.3  # 기본값
+        
+        closes = df['close'].values
+        recovery_count = 0
+        similar_situations = 0
+        
+        # 현재와 유사한 하락 상황 찾기
+        current_drop = (current_price - avg_buy_price) / avg_buy_price
+        
+        for i in range(10, len(closes) - 5):
+            period_drop = (closes[i] - closes[i-5]) / closes[i-5]
+            if abs(period_drop - current_drop) < 0.01:  # 유사한 하락폭
+                similar_situations += 1
+                # 5봉 후 회복 여부 확인
+                if closes[i+5] > closes[i]:
+                    recovery_count += 1
+        
+        if similar_situations < 3:
+            return 0.4  # 데이터 부족시 중립
+        
+        return recovery_count / similar_situations
+
     currency = ticker.split("-")[1]
     
     try:
@@ -558,128 +668,159 @@ def trade_sell(ticker):
         print(f"[{ticker}] 초기 정보 조회 오류: {e}")
         return None
 
-    # ========== 즉시 손절 조건 강화 ==========
-    if profit_rate < cut_rate:
-        # 추가 확인: 1분봉 급락 검증
-        df_1m = pyupbit.get_ohlcv(ticker, interval="minute1", count=3)
-        time.sleep(0.05)
-        if df_1m is not None and len(df_1m) >= 3:
-            recent_drop_1m = (df_1m['close'].iloc[-1] - df_1m['open'].iloc[-3]) / df_1m['open'].iloc[-3]
-            if recent_drop_1m < -0.015:  # 1.5% 이상 급락시 즉시 손절
-                sell_order = upbit.sell_market_order(ticker, buyed_amount)
-                cut_message = f"❌ **[긴급 손절]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}\n"
-                cut_message += f"사유: 1분봉 급락 감지! RSI: {calculate_rsi_unified([cur_price]):.1f}"
-                print(cut_message)
-                send_discord_message(cut_message)
-                return sell_order
+    # ========== 🔥 핵심: 최소수익률 미달시 매도 중단 ==========
+    if profit_rate < min_rate:
+        print(f"[{ticker}] 최소수익률({min_rate}%) 미달로 매도 대기 중... 현재: {profit_rate:.2f}%")
+        
+        # ❌ 단, 극한 손실 방지선은 유지 (긴급 탈출)
+        emergency_cut = cut_rate - 1.0  # 손절선보다 1% 더 낮은 긴급선
+        if profit_rate < emergency_cut:
+            # 추가 검증: 30분봉으로 대세 하락 확인
+            df_30m = pyupbit.get_ohlcv(ticker, interval="minute30", count=10)
+            time.sleep(0.1)
+            if df_30m is not None and len(df_30m) >= 5:
+                recent_trend = (df_30m['close'].iloc[-1] - df_30m['close'].iloc[-5]) / df_30m['close'].iloc[-5]
+                if recent_trend < -0.05:  # 30분봉 5% 이상 하락시만 긴급 매도
+                    sell_order = upbit.sell_market_order(ticker, buyed_amount)
+                    emergency_msg = f"🚨 **[긴급탈출]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}\n"
+                    emergency_msg += f"사유: 극한손실방지 + 30분봉 대세하락 확인"
+                    print(emergency_msg)
+                    send_discord_message(emergency_msg)
+                    return sell_order
+        
+        return None  # 최소수익률 미달시 매도 시도 안함
 
-    # 5분봉 데이터 수집
-    df_5m = pyupbit.get_ohlcv(ticker, interval="minute5", count=30)
+    # ========== 데이터 수집 및 기술적 분석 ==========
+    df_5m = pyupbit.get_ohlcv(ticker, interval="minute5", count=50)  # 더 많은 데이터
     time.sleep(0.1)
-    if df_5m is None or len(df_5m) < 15:
+    if df_5m is None or len(df_5m) < 30:
         print(f"[{ticker}] 5분봉 데이터 부족")
         return None
     
     closes = df_5m['close'].values
     volumes = df_5m['volume'].values
-    
-    # 현재 RSI
     current_rsi = calculate_rsi_unified(closes)
     
-    # ========== 매도 신호 강도 계산 ==========
+    # 반등 확률 계산
+    recovery_prob = calculate_recovery_probability(df_5m, cur_price, avg_buy_price)
+    
+    # ========== 🧠 지능형 매도 신호 계산 ==========
     signals = []
     sell_strength = 0
     
-    # 볼린저밴드 상단 이탈
+    # 볼린저밴드 + RSI 융합 신호
     sma20 = np.mean(closes[-20:])
     std20 = np.std(closes[-20:])
     bb_upper = sma20 + (2.0 * std20)
+    bb_lower = sma20 - (2.0 * std20)
     bb_position = (cur_price - sma20) / std20
     
-    if bb_position > 2.0 and cur_price < df_5m['high'].iloc[-2]:  # 상단 이탈 후 하락
-        signals.append("BB상단급락")
-        sell_strength += 3
+    # 상단 과열 매도 신호
+    if current_rsi > 70 and bb_position > 1.5:
+        if cur_price < closes[-2]:  # 고점 대비 하락 시작
+            signals.append("과열후하락개시")
+            sell_strength += 4
     
-    # RSI 과열 후 하락
-    if current_rsi > 75:
-        prev_rsi = calculate_rsi_unified(closes[:-1])
-        if current_rsi < prev_rsi:
-            signals.append("RSI과열하락")
-            sell_strength += 2
+    # 중기 추세 이탈
+    sma10 = np.mean(closes[-10:])
+    if cur_price < sma10 and sma10 < sma20:  # 단중기 동시 하락
+        trend_break_volume = np.mean(volumes[-3:]) / np.mean(volumes[-10:-3])
+        if trend_break_volume > 1.3:  # 대량과 함께 추세 이탈
+            signals.append("추세이탈대량")
+            sell_strength += 3
     
-    # 거래량 급증과 함께 20선 이탈
-    recent_vol = np.mean(volumes[-3:])
-    avg_vol = np.mean(volumes[-10:-3])
-    volume_spike = recent_vol / (avg_vol + 1e-8)
-    
-    if cur_price < sma20 and volume_spike > 1.5:
-        signals.append("20선대량이탈")
-        sell_strength += 2
-    
-    # 연속 하락
-    consecutive_down = 0
-    if len(closes) >= 4:
-        for i in range(1, 4):
-            if closes[-i] < closes[-i-1]:
-                consecutive_down += 1
-            else:
-                break
-    
-    if consecutive_down >= 3:
-        signals.append(f"연속{consecutive_down}틱하락")
-        sell_strength += consecutive_down
+    # RSI 다이버전스 (가격 상승 vs RSI 하락)
+    if len(closes) >= 10:
+        price_trend = closes[-1] - closes[-5]
+        prev_rsi = calculate_rsi_unified(closes[:-5])
+        if price_trend > 0 and current_rsi < prev_rsi - 5:  # 가격↑ RSI↓
+            signals.append("RSI다이버전스")
+            sell_strength += 3
 
-    # ========== 매도 요구 점수 설정 (완화) ==========
+    # ========== 🎯 적응형 매도 기준 설정 ==========
+    # 수익률 구간별 차등 기준
     if profit_rate >= max_rate:
-        required_score = 1  # 목표 달성시 약한 신호로도 매도
-    elif profit_rate >= min_rate * 0.7:  # 최소 수익률의 70% 이상
-        required_score = 2  # 약간 완화
-    else:
-        required_score = 3  # 손실 방지
+        required_score = 1  # 목표 달성시 즉시 매도
+        hold_bonus = 0
+    elif profit_rate >= min_rate * 2:  # 최소수익률의 2배 이상
+        required_score = 2
+        hold_bonus = 1 if recovery_prob > 0.6 else 0  # 반등 확률 고려
+    elif profit_rate >= min_rate * 1.5:  # 최소수익률의 1.5배
+        required_score = 3
+        hold_bonus = 2 if recovery_prob > 0.7 else 0
+    else:  # 최소수익률 ~ 1.5배
+        required_score = 4  # 높은 확신 필요
+        hold_bonus = 3 if recovery_prob > 0.8 else 1
 
-    should_sell_technical = sell_strength >= required_score
-    signal_text = " + ".join(signals) + f" (강도:{sell_strength}/{required_score})"
+    # 반등 가능성이 높으면 매도 기준 상향 (홀딩 우대)
+    adjusted_required_score = required_score + hold_bonus
     
-    # ========== 매도 실행 루프 ==========
-    max_attempts = min(sell_time, 30)  # 최대 30회로 제한
+    should_sell_technical = sell_strength >= adjusted_required_score
+    signal_text = " + ".join(signals) + f" (강도:{sell_strength}/{adjusted_required_score}, 반등확률:{recovery_prob:.1%})"
+    
+    # ========== 🔄 스마트 매도 실행 루프 ==========
+    max_attempts = min(sell_time, 25)  # 효율성 개선
     attempts = 0
+    consecutive_no_change = 0  # 가격 정체 카운터
+    last_price = cur_price
     
     while attempts < max_attempts:
         cur_price = pyupbit.get_current_price(ticker)
         profit_rate = (cur_price - avg_buy_price) / avg_buy_price * 100 if avg_buy_price > 0 else 0
         
-        # 손절 재확인
-        if profit_rate < cut_rate:
-            sell_order = upbit.sell_market_order(ticker, buyed_amount)
-            cut_message = f"❌ **[손절]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}"
-            print(cut_message)
-            send_discord_message(cut_message)
-            return sell_order
+        # 가격 변화 모니터링
+        price_change = abs(cur_price - last_price) / last_price
+        if price_change < 0.001:  # 0.1% 미만 변화
+            consecutive_no_change += 1
+        else:
+            consecutive_no_change = 0
+        last_price = cur_price
 
-        print(f"[{ticker}] 시도 {attempts + 1}/{max_attempts} | 수익률: {profit_rate:.2f}% | 신호강도: {sell_strength}/{required_score}")
+        print(f"[{ticker}] 시도 {attempts + 1}/{max_attempts} | 수익률: {profit_rate:.2f}% | "
+              f"신호강도: {sell_strength}/{adjusted_required_score} | 반등확률: {recovery_prob:.1%}")
 
-        # 매도 조건 충족시
-        if profit_rate >= max_rate or should_sell_technical:
+        # ✅ 확실한 매도 조건들
+        if profit_rate >= max_rate:  # 목표 달성
             sell_order = upbit.sell_market_order(ticker, buyed_amount)
-            
-            sell_type = "목표달성" if profit_rate >= max_rate else "기술적매도"
-            sellmsg = f"✅ **[{sell_type}]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}\n"
-            sellmsg += f"신호: {signal_text}"
-            
+            sellmsg = f"🎯 **[목표달성]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}"
             print(sellmsg)
             send_discord_message(sellmsg)
+            return sell_order
+        
+        elif should_sell_technical and profit_rate >= min_rate * 1.2:  # 기술적 + 충분한 수익
+            sell_order = upbit.sell_market_order(ticker, buyed_amount)
+            sellmsg = f"📊 **[기술적매도]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}\n"
+            sellmsg += f"신호: {signal_text}"
+            print(sellmsg)
+            send_discord_message(sellmsg)
+            return sell_order
+        
+        elif consecutive_no_change >= 8 and profit_rate >= min_rate * 1.5:  # 가격 정체 + 적정 수익
+            sell_order = upbit.sell_market_order(ticker, buyed_amount)
+            stagnant_msg = f"⏸️ **[정체매도]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}\n"
+            stagnant_msg += f"사유: 8틱 연속 가격정체, 기회비용 고려"
+            print(stagnant_msg)
+            send_discord_message(stagnant_msg)
             return sell_order
         
         time.sleep(second)
         attempts += 1
     
-    # 최소 수익률 이상이면 시간 종료 후에도 매도
-    if profit_rate >= min_rate * 0.7:  # 최소 수익률의 70% 이상이면 매도 (완화)
+    # ========== 🕐 시간 종료 처리 (개선) ==========
+    # 시간 종료시에도 최소수익률 기준 유지
+    if profit_rate >= min_rate:  # 최소수익률 이상일 때 시간종료 매도
         sell_order = upbit.sell_market_order(ticker, buyed_amount)
-        final_msg = f"⚠️ **[시간종료매도]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}"
+        final_msg = f"⏰ **[시간종료매도]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}\n"
+        final_msg += f"기준: 최소수익률 달성으로 안전한 수익 확보"
         print(final_msg)
         send_discord_message(final_msg)
         return sell_order
+    else:
+        # 수익이 부족하면 홀딩 지속
+        hold_msg = f"🤝 **[홀딩지속]**: [{ticker}] 수익률: {profit_rate:.2f}% / 현재가: {cur_price:,.1f}\n"
+        hold_msg += f"사유: 최소수익률 미달 (목표: {min_rate:.1f}% 이상), 반등확률: {recovery_prob:.1%}"
+        print(hold_msg)
+        send_discord_message(hold_msg)
 
     return None
 
