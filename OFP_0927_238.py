@@ -51,7 +51,7 @@ min_rate, sell_time, rsi_sell_s, rsi_sell_e, max_rate = get_user_input()
 
 second = 1.0
 min_krw = 10_000
-cut_rate = -5.0
+cut_rate = -3.0
 
 def get_balance(ticker):
     try:
