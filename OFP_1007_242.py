@@ -35,8 +35,8 @@ rsi_buy_e = 45
 def get_user_input():
     while True:
         try:
-            min_rate = float(input("최소 수익률 (예: 0.7): "))
-            max_rate = float(input("최대 수익률 (예: 2.5): "))
+            min_rate = float(input("최소 수익률 (예: 1.1): "))
+            max_rate = float(input("최대 수익률 (예: 5.0): "))
             sell_time = int(input("매도감시횟수 (예: 20): "))
             rsi_sell_s =int(input("RSI 매도 감시 시작 (예: 65): "))
             rsi_sell_e =int(input("RSI 매도 감시 종료 (예: 80): "))
@@ -1214,4 +1214,5 @@ if __name__ == "__main__":
         print("\n\n프로그램이 종료되었습니다.")
     except Exception as e:
         print(f"\n\n치명적 오류: {e}")
+
         send_discord_message(f"시스템 종료: {e}")
