@@ -87,9 +87,9 @@ def get_top_volume_tickers():
     print("=" * 50)
     print("🎯 전략 대상: 30개 메이저 코인 (고정)")
     print("=" * 50)
-    for i, ticker in enumerate(STRATEGIC_COINS, 1):
-        print(f"  {i:2}. {ticker}")
-    print("=" * 70 + "\n")
+    # for i, ticker in enumerate(STRATEGIC_COINS, 1):
+    #     print(f"  {i:2}. {ticker}")
+    # print("=" * 70 + "\n")
     
     return STRATEGIC_COINS
     
