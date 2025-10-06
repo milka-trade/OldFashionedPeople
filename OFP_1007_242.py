@@ -31,6 +31,8 @@ min15 = "minute15"
 
 rsi_buy_s = 25
 rsi_buy_e = 45
+rsi_sell_s = 65
+rsi_sell_e = 80
 
 def get_user_input():
     while True:
@@ -38,16 +40,13 @@ def get_user_input():
             min_rate = float(input("최소 수익률 (예: 1.1): "))
             max_rate = float(input("최대 수익률 (예: 5.0): "))
             sell_time = int(input("매도감시횟수 (예: 20): "))
-            rsi_sell_s =int(input("RSI 매도 감시 시작 (예: 65): "))
-            rsi_sell_e =int(input("RSI 매도 감시 종료 (예: 80): "))
             break
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
 
-    return min_rate, sell_time, rsi_sell_s, rsi_sell_e, max_rate
-
+    return min_rate, sell_time, max_rate  
 # 함수 호출 및 결과 저장
-min_rate, sell_time, rsi_sell_s, rsi_sell_e, max_rate = get_user_input()
+min_rate, sell_time, max_rate = get_user_input() 
 
 second = 1.0
 min_krw = 10_000
@@ -444,11 +443,11 @@ def trade_buy(ticker=None):
         
         return score, signals
     
-    # ==================== 메인 로직 시작 ====================
+    # # ==================== 메인 로직 시작 ====================
     
-    print("\n" + "="*80)
-    print("통합 복리 매수 시스템 v3.0 시작")
-    print("="*80)
+    # print("\n" + "="*80)
+    # print("통합 복리 매수 시스템 v3.0 시작")
+    # print("="*80)
     
     # ========== STEP 1: 자산 현황 ==========
     krw_balance = get_krw_balance()
@@ -1195,24 +1194,21 @@ def buying_logic():
 
 # ========== 프로그램 시작 ==========
 if __name__ == "__main__":
-    trade_start = datetime.now().strftime('%m/%d %H시%M분%S초')
-    trade_msg = f'🚀 {trade_start} 통합 복리 매수 시스템 v3.0\n'
-    trade_msg += f'📊 설정: 수익률 {min_rate}%~{max_rate}% | 매도시도 {sell_time}회 | 손절 {cut_rate}%\n'
+    # trade_start = datetime.now().strftime('%m/%d %H시%M분%S초')
+    # trade_msg = f'🚀 {trade_start} 통합 복리 매수 시스템 v3.0\n'
+    trade_msg = f'📊 설정: 수익률 {min_rate}%~{max_rate}% | 매도시도 {sell_time}회 | 손절 {cut_rate}%\n'
     trade_msg += f'📈 RSI 매수: {rsi_buy_s}~{rsi_buy_e} | RSI 매도: {rsi_sell_s}~{rsi_sell_e}\n'
     trade_msg += f'💡 개선사항: 조건완화, 병렬처리, 자동보고'
     
-    print("="*50)
     print(trade_msg)
-    print("="*50)
     send_discord_message(trade_msg)
     
-    # # 메인 매매 로직 실행
-    # buying_logic()
-    try:
-        buying_logic()
-    except KeyboardInterrupt:
-        print("\n\n프로그램이 종료되었습니다.")
-    except Exception as e:
-        print(f"\n\n치명적 오류: {e}")
-
-        send_discord_message(f"시스템 종료: {e}")
+    # 메인 매매 로직 실행
+    buying_logic()
+    # try:
+    #     buying_logic()
+    # except KeyboardInterrupt:
+    #     print("\n\n프로그램이 종료되었습니다.")
+    # except Exception as e:
+    #     print(f"\n\n치명적 오류: {e}")
+    #     send_discord_message(f"시스템 종료: {e}")
