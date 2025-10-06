@@ -422,7 +422,7 @@ def trade_buy(ticker):
     print(f"💰 보유 원화: {krw:,.0f}원")
 
     MIN_ORDER_AMOUNT = 5000
-    STANDARD_BUY_AMOUNT = 50000  # 매수 금액을 5만원으로 조정 (더 공격적)
+    STANDARD_BUY_AMOUNT = 100_000  # 매수 금액을 10만원으로 조정 (더 공격적)
 
     buy_size = 0
     if krw < MIN_ORDER_AMOUNT:
