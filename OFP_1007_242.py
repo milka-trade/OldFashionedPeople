@@ -938,17 +938,16 @@ profit_report_running = False
 
 def send_profit_report():
     """
-    개선된 수익률 보고서 - 매시간 정시에 실행
+    효율화된 수익률 보고서 - 매시간 정시 실행
     
-    주요 개선사항:
-    1. 전체 보유 자산 표시 (개수 제한 없음)
-    2. 자산평가액 정확도 향상 (재시도 + locked 잔고 포함)
-    3. 불필요한 정보 제거 (전시간 대비, 목표 달성도)
-    4. 견고한 에러 처리
+    개선사항:
+    1. 코드 길이 50% 단축 (150줄 → 75줄)
+    2. 출력 형식 변경: 코인명 | 수익률 | 평가금액 | 순수익금액
+    3. 불필요한 재시도 로직 제거 (한 번 실패 시 스킵)
+    4. 간결한 에러 처리
     """
     global profit_report_running
     
-    # 중복 실행 방지
     if profit_report_running:
         return
     
@@ -959,209 +958,104 @@ def send_profit_report():
             try:
                 now = datetime.now()
                 
-                # ========== STEP 1: 정시까지 대기 ==========
-                if now.minute == 0:
-                    # 정시라면 즉시 실행
-                    pass
-                else:
-                    # 다음 정시까지 대기
-                    next_hour = (now + timedelta(hours=1)).replace(
-                        minute=0, second=0, microsecond=0
-                    )
+                # 정시까지 대기
+                if now.minute != 0:
+                    next_hour = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
                     wait_seconds = (next_hour - now).total_seconds()
-                    
-                    if wait_seconds > 60:  # 1분 이상이면 대기
-                        time.sleep(wait_seconds - 30)  # 30초 전에 준비
+                    if wait_seconds > 60:
+                        time.sleep(wait_seconds - 30)
                         continue
-
-                # ========== STEP 2: 보고서 헤더 생성 ==========
-                report_message = f"📈 **[{now.strftime('%m/%d %H시')} 정시 보고서]** 📈\n"
-                report_message += "━━━━━━━━━━━━━━━━━━━━\n\n"
                 
-                # ========== STEP 3: 잔고 정보 조회 (재시도 로직) ==========
-                balances = None
-                max_retries = 3  # 최대 3번 재시도
+                # 잔고 조회
+                balances = upbit.get_balances()
+                if not balances:
+                    raise Exception("잔고 조회 실패")
                 
-                for attempt in range(max_retries):
-                    try:
-                        balances = upbit.get_balances()
-                        if balances and isinstance(balances, list):
-                            break  # 성공
-                    except Exception as e:
-                        print(f"⚠️ 잔고 조회 실패 (시도 {attempt+1}/{max_retries}): {e}")
-                        if attempt < max_retries - 1:
-                            time.sleep(2)  # 2초 대기 후 재시도
-                        else:
-                            raise  # 마지막 시도 실패 시 에러 발생
+                # 자산 계산
+                total_value = 0.0
+                crypto_value = 0.0
+                krw_balance = 0.0
+                holdings = []
                 
-                if not balances or not isinstance(balances, list):
-                    raise Exception("잔고 정보를 가져올 수 없습니다")
-                
-                # ========== STEP 4: 자산 계산 ==========
-                total_krw = 0.0  # 총 자산 (KRW + 암호화폐 평가액)
-                total_crypto_value = 0.0  # 암호화폐 평가액만
-                krw_balance = 0.0  # 보유 원화
-                holding_assets = []  # 보유 코인 리스트
-                
-                # 4-1. KRW 잔고 먼저 계산
-                for b in balances:
-                    if not isinstance(b, dict) or 'currency' not in b:
-                        continue
-                    
-                    if b['currency'] == "KRW":
-                        # balance: 사용 가능한 금액
-                        # locked: 주문 중인 금액
-                        balance_amount = float(b.get('balance', 0))
-                        locked_amount = float(b.get('locked', 0))
-                        krw_balance = balance_amount + locked_amount
-                        total_krw += krw_balance
-                        break
-                
-                # 4-2. 암호화폐 자산 계산
-                # 평가 불가능한 코인 리스트 (거래 정지, 상장 폐지 등)
-                EXCLUDED_COINS = {'QI', 'ONK', 'ETHF', 'ETHW', 'PURSE'}
+                EXCLUDED = {'QI', 'ONK', 'ETHF', 'ETHW', 'PURSE'}
                 
                 for b in balances:
-                    if not isinstance(b, dict) or 'currency' not in b:
+                    currency = b.get('currency')
+                    if not currency:
                         continue
                     
-                    currency = b['currency']
+                    balance = float(b.get('balance', 0)) + float(b.get('locked', 0))
                     
-                    # KRW는 이미 처리했으므로 스킵
-                    if currency == "KRW":
+                    if currency == 'KRW':
+                        krw_balance = balance
+                        total_value += balance
                         continue
                     
-                    # 평가 불가능한 코인 즉시 제외 (API 호출 절약)
-                    if currency in EXCLUDED_COINS:
-                        print(f"⚠️ {currency}: 평가 불가 코인으로 제외됨")
+                    if balance <= 0 or currency in EXCLUDED:
                         continue
                     
-                    # balance: 사용 가능한 코인
-                    # locked: 주문 중인 코인
-                    balance_amount = float(b.get('balance', 0))
-                    locked_amount = float(b.get('locked', 0))
-                    total_amount = balance_amount + locked_amount
-                    
-                    # 보유량이 0이면 스킵
-                    if total_amount <= 0:
-                        continue
-                    
+                    # 현재가 조회 (1회만)
                     ticker = f"KRW-{currency}"
-                    
-                    # 현재가 조회 (재시도 로직)
-                    current_price = None
-                    for price_attempt in range(3):
-                        try:
-                            current_price = pyupbit.get_current_price(ticker)
-                            if current_price:
-                                break
-                            time.sleep(0.5)
-                        except:
-                            if price_attempt < 2:
-                                time.sleep(0.5)
-                            else:
-                                print(f"⚠️ {ticker} 가격 조회 실패 (3회 시도)")
-                    
-                    # 가격 조회 실패 시 해당 코인은 스킵
-                    # (거래 정지, 네트워크 오류 등 자동 대응)
-                    if not current_price:
-                        print(f"⚠️ {ticker}: 가격 조회 실패로 제외됨")
+                    try:
+                        current_price = pyupbit.get_current_price(ticker)
+                        if not current_price:
+                            continue
+                    except:
                         continue
                     
-                    # 평균 매수가
-                    avg_buy_price = float(b.get('avg_buy_price', 0))
+                    avg_buy = float(b.get('avg_buy_price', 0))
+                    eval_value = balance * current_price
+                    profit_rate = ((current_price - avg_buy) / avg_buy * 100) if avg_buy > 0 else 0
+                    net_profit = eval_value - (balance * avg_buy)
                     
-                    # 수익률 계산
-                    if avg_buy_price > 0:
-                        profit_rate = ((current_price - avg_buy_price) / avg_buy_price) * 100
-                    else:
-                        profit_rate = 0.0
+                    crypto_value += eval_value
+                    total_value += eval_value
                     
-                    # 평가액 계산 (소수점 정밀도 유지)
-                    asset_value = total_amount * current_price
-                    
-                    # 총 자산에 추가
-                    total_crypto_value += asset_value
-                    total_krw += asset_value
-                    
-                    # 보유 자산 리스트에 추가
-                    holding_assets.append({
-                        "ticker": currency,
-                        "amount": total_amount,
-                        "avg_buy_price": avg_buy_price,
-                        "current_price": current_price,
-                        "profit_rate": profit_rate,
-                        "asset_value": asset_value
+                    holdings.append({
+                        'name': currency,
+                        'rate': profit_rate,
+                        'value': eval_value,
+                        'profit': net_profit
                     })
                     
-                    # API 호출 간격 (Rate Limit 방지)
                     time.sleep(0.1)
                 
-                # ========== STEP 5: 보유 자산 정렬 (평가액 높은 순) ==========
-                holding_assets.sort(key=lambda x: x['asset_value'], reverse=True)
+                # 평가액 순 정렬
+                holdings.sort(key=lambda x: x['value'], reverse=True)
                 
-                # ========== STEP 6: 보고서 본문 생성 ==========
+                # 보고서 생성
+                msg = f"[{now.strftime('%m/%d %H시')} 정시 보고서]\n"
+                msg += "━━━━━━━━━━━━━━━━━━━━\n"
+                msg += f"총자산: {total_value:,.0f}원\n"
+                msg += f"KRW: {krw_balance:,.0f}원 | 암호화폐: {crypto_value:,.0f}원\n\n"
                 
-                # 6-1. 총 자산 표시
-                report_message += f"💰 **총 자산: {total_krw:,.0f}원**\n"
-                report_message += f"   ├─ 💵 KRW: {krw_balance:,.0f}원\n"
-                report_message += f"   └─ 💎 암호화폐: {total_crypto_value:,.0f}원\n\n"
-                
-                # 6-2. 보유 자산 상세 (전체 표시 - 한 줄 압축)
-                if holding_assets:
-                    report_message += f"📋 **보유 자산 ({len(holding_assets)}개)**\n"
-                    report_message += "━━━━━━━━━━━━━━━━━━━━\n"
+                if holdings:
+                    msg += f"보유자산 ({len(holdings)}개)\n"
+                    msg += "━━━━━━━━━━━━━━━━━━━━\n"
                     
-                    for idx, asset in enumerate(holding_assets, 1):
-                        # 수익률에 따른 이모지
-                        if asset['profit_rate'] > 5:
-                            emoji = "🔥"
-                        elif asset['profit_rate'] > 0:
-                            emoji = "📈"
-                        elif asset['profit_rate'] > -5:
-                            emoji = "➡️"
-                        else:
-                            emoji = "📉"
-                        
-                        # 코인명을 4자로 고정 (정렬 효과)
-                        ticker_display = f"{asset['ticker']:<4}"
-                        
-                        # 한 줄로 압축: 코인명 이모지 수익률 | 평가액 (현재가)
-                        report_message += (
-                            f"{idx}. {ticker_display} {emoji} "
-                            f"{asset['profit_rate']:+6.2f}% | "
-                            f"평가 {asset['asset_value']:>10,.0f}원 "
-                            f"(현 {asset['current_price']:>12,.0f}원)\n"
+                    for i, h in enumerate(holdings, 1):
+                        emoji = "🔥" if h['rate'] > 5 else "📈" if h['rate'] > 0 else "➡️" if h['rate'] > -5 else "📉"
+                        msg += (
+                            f"{i}. {h['name']:<4} {emoji} "
+                            f"{h['rate']:+6.2f}% | "
+                            f"평가 {h['value']:>10,.0f}원 | "
+                            f"순익 {h['profit']:>+10,.0f}원\n"
                         )
-                    
                 else:
-                    report_message += "📋 **보유 자산**\n"
-                    report_message += "━━━━━━━━━━━━━━━━━━━━\n"
-                    report_message += "현재 보유 코인 없음 (매수 기회 탐색 중)\n"
+                    msg += "보유 코인 없음\n"
                 
-                # ========== STEP 7: 보고서 전송 ==========
-                send_discord_message(report_message)
-                print(f"✅ {now.strftime('%H시')} 정시 보고서 전송 완료")
-                print(f"   총 자산: {total_krw:,.0f}원 (KRW: {krw_balance:,.0f}원 + 암호화폐: {total_crypto_value:,.0f}원)")
+                send_discord_message(msg)
+                print(f"[{now.strftime('%H시')}] 보고서 전송 완료 (총자산: {total_value:,.0f}원)")
                 
-                # ========== STEP 8: 1시간 대기 ==========
-                time.sleep(3600)  # 3600초 = 1시간
+                time.sleep(3600)
                 
             except Exception as e:
-                # 오류 발생 시 로그 및 알림
-                error_msg = f"❌ 수익률 보고서 생성 오류\n"
-                error_msg += f"시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-                error_msg += f"에러: {str(e)}"
-                
+                error_msg = f"수익률 보고서 오류\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{str(e)}"
                 print(error_msg)
                 send_discord_message(error_msg)
-                
-                # 5분 후 재시도
-                print("⏳ 5분 후 재시도합니다...")
                 time.sleep(300)
     
     finally:
-        # 스레드 종료 시 플래그 해제
         profit_report_running = False
 
 def selling_logic():
