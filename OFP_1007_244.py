@@ -1091,24 +1091,6 @@ def trade_sell(ticker):
     - 시장 상황 적응형 매도 기준
     """
 
-    def calculate_rsi_unified(closes, period=14):
-        if len(closes) < period + 1:
-            return 50.0
-        deltas = np.diff(closes)
-        gains = np.where(deltas > 0, deltas, 0)
-        losses = np.where(deltas < 0, -deltas, 0)
-        
-        avg_gain = np.mean(gains[:period])
-        avg_loss = np.mean(losses[:period])
-        
-        for i in range(period, len(closes)-1):
-            avg_gain = (avg_gain * (period - 1) + gains[i]) / period
-            avg_loss = (avg_loss * (period - 1) + losses[i]) / period
-        
-        rs = avg_gain / (avg_loss + 1e-8)
-        rsi = 100 - (100 / (1 + rs))
-        return rsi
-
     def calculate_recovery_probability(df, current_price, avg_buy_price):
         """반등 확률 계산 - 과거 패턴 분석"""
         if df is None or len(df) < 20:
@@ -1183,7 +1165,7 @@ def trade_sell(ticker):
     
     closes = df_5m['close'].values
     volumes = df_5m['volume'].values
-    current_rsi = calculate_rsi_unified(closes)
+    current_rsi = calculate_rsi(closes)
     
     # 반등 확률 계산
     recovery_prob = calculate_recovery_probability(df_5m, cur_price, avg_buy_price)
@@ -1216,7 +1198,7 @@ def trade_sell(ticker):
     # RSI 다이버전스 (가격 상승 vs RSI 하락)
     if len(closes) >= 10:
         price_trend = closes[-1] - closes[-5]
-        prev_rsi = calculate_rsi_unified(closes[:-5])
+        prev_rsi = calculate_rsi(closes[:-5])
         if price_trend > 0 and current_rsi < prev_rsi - 5:  # 가격↑ RSI↓
             signals.append("RSI다이버전스")
             sell_strength += 3
