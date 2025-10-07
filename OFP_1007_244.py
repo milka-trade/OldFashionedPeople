@@ -5,10 +5,7 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 import requests
-# import ta
-# import pandas as pd
 import threading
-# from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 
@@ -25,9 +22,6 @@ def send_discord_message(msg):
         time.sleep(5) 
 
 count_200 = 200
-
-min5 = "minute5"
-min15 = "minute15"
 
 rsi_buy_s = 25
 rsi_buy_e = 45
