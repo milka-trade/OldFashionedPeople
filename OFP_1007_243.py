@@ -1016,9 +1016,9 @@ def trade_buy(ticker=None):
         return "Insufficient balance", None
     
     # 포지션 상한 체크 (리스크 관리)
-    # 총 자산의 80%까지만 암호화폐 보유 허용
+    # 총 자산의 80%까지만 암호화폐 보유 허용 → 100% 허용으로 변경
     # 이유: 급락 시 추가 매수 여력 확보 및 리스크 분산
-    crypto_limit = total_asset * 0.80
+    crypto_limit = total_asset #* 0.80
     
     if crypto_value >= crypto_limit:
         # 이미 80% 달성 시 추가 매수 중단
