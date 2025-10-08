@@ -1289,8 +1289,8 @@ def trade_sell(ticker):
                 )
                 
                 if crash_analysis:
-                    print(f"🚨 폭락위험: {crash_analysis['crash_probability']*100:.0f}% ({crash_analysis['risk_level']})")
-                    print(f"   요인: {', '.join(crash_analysis['factors'][:3])}")
+                    # print(f"🚨 폭락위험: {crash_analysis['crash_probability']*100:.0f}% ({crash_analysis['risk_level']})")
+                    # print(f"   요인: {', '.join(crash_analysis['factors'][:3])}")
                     
                     # -3% 이상 손실 + 폭락 70% 이상 → 손절
                     if profit_rate <= -3.0 and crash_analysis['should_cut']:
