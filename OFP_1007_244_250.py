@@ -698,7 +698,7 @@ def trade_buy(ticker=None):
     crypto_value = get_total_crypto_value()
     total_asset = crypto_value + krw_balance
     
-    print(f"자산: {total_asset:,.0f}원 (암호화폐 {crypto_value/total_asset*100:.0f}%)")
+    print(f"자산: {total_asset:,.0f}원 [암호화폐 {crypto_value:,.0f}원 ({crypto_value/total_asset*100:.0f}%)]")
     
     MIN_ORDER = 5000
     if krw_balance < MIN_ORDER:
