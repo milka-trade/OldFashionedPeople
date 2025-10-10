@@ -73,7 +73,7 @@ def get_top_volume_tickers():
     
     STRATEGIC_COINS = [
         "KRW-BTC","KRW-ETH","KRW-XRP","KRW-SOL","KRW-TRX","KRW-ADA","KRW-LINK","KRW-BCH","KRW-XLM","KRW-AVAX"
-        # "KRW-BCH","KRW-DOT","KRW-AAVE","KRW-PEPE","KRW-NEAR","KRW-APT","KRW-ETC","KRW-POL","KRW-VET","KRW-ALGO"
+        "KRW-BCH","KRW-DOT","KRW-AAVE","KRW-PEPE","KRW-NEAR","KRW-APT","KRW-ETC","KRW-POL","KRW-VET","KRW-ALGO"
     ]
     
     print("=" * 50)
