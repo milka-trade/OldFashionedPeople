@@ -31,7 +31,7 @@ rsi_sell_e = 80
 def get_user_input():
     while True:
         try:
-            min_rate = float(input("최소 수익률 (예: 1.1): "))
+            min_rate = float(input("최소 수익률 (예: 1.0): "))
             max_rate = float(input("최대 수익률 (예: 5.0): "))
             sell_time = int(input("매도감시횟수 (예: 10): "))
             break
@@ -72,7 +72,7 @@ def get_top_volume_tickers():
     """
     
     STRATEGIC_COINS = [
-        "KRW-BTC","KRW-ETH","KRW-XRP","KRW-SOL","KRW-TRX","KRW-ADA","KRW-LINK","KRW-BCH","KRW-XLM","KRW-AVAX"
+        "KRW-BTC","KRW-ETH","KRW-XRP","KRW-SOL","KRW-TRX","KRW-ADA","KRW-LINK","KRW-BCH","KRW-XLM","KRW-AVAX",
         "KRW-BCH","KRW-DOT","KRW-AAVE","KRW-PEPE","KRW-NEAR","KRW-APT","KRW-ETC","KRW-POL","KRW-VET","KRW-ALGO"
     ]
     
@@ -267,7 +267,7 @@ def analyze_price_reversal(closes, volumes):
     }
 
 def predict_rebound_potential(closes, bb_lower_series, bb_width_series):
-    """🔥 2% 반등 가능성 예측 (개선된 확률 모델)"""
+    """🔥 2% 반등 가능성 예측 (보수적 확률 모델)"""
     if bb_lower_series is None or len(closes) < 20:
         return None
     
@@ -284,16 +284,16 @@ def predict_rebound_potential(closes, bb_lower_series, bb_width_series):
     recent_high = np.max(closes[-20:])
     drop_from_high = (current_price - recent_high) / recent_high * 100
     
-    # 🆕 [4] 가격 안정성 (변동 계수)
+    # 🆕 [4] 가격 안정성 (변동 계수) - 가중치 하향
     recent_std = np.std(closes[-5:])
     price_stability = 1 - min(recent_std / current_price, 0.5)
     
-    # 🆕 [5] 추세 전환 강도
+    # 🆕 [5] 추세 전환 강도 - 가중치 하향
     short_ma = np.mean(closes[-3:])
     long_ma = np.mean(closes[-10:])
     trend_shift = (short_ma - long_ma) / long_ma
     
-    # 반등 점수 계산 (가중 합산)
+    # 반등 점수 계산 (기존과 동일)
     score = 0
     
     # BB 하단 근접도 (30점)
@@ -306,15 +306,15 @@ def predict_rebound_potential(closes, bb_lower_series, bb_width_series):
     else:
         score += 10
     
-    # BB 폭 (20점)
+    # BB 폭 (25점) - 기존 30점에서 하향
     if avg_width > 6:
-        score += 20
+        score += 25
     elif avg_width > 4:
-        score += 15
+        score += 20
     else:
-        score += 8
+        score += 10
     
-    # 하락 폭 (25점)
+    # 하락 폭 (25점) - 기존 30점에서 하향
     if drop_from_high < -10:
         score += 25
     elif drop_from_high < -7:
@@ -324,19 +324,28 @@ def predict_rebound_potential(closes, bb_lower_series, bb_width_series):
     else:
         score += 8
     
-    # 🆕 가격 안정성 (15점)
-    score += price_stability * 15
+    # 🔧 가격 안정성 (10점) - 기존 15점에서 하향
+    score += price_stability * 10
     
-    # 🆕 추세 전환 (10점)
+    # 🔧 추세 전환 (10점) - 기존과 동일하지만 조건 강화
     if trend_shift > 0:
-        score += min(trend_shift * 200, 10)
+        score += min(trend_shift * 150, 10)  # 기존 200에서 150으로 하향
     
-    # 예상 수익률
+    # 예상 수익률 (기존과 동일)
     expected_gain = min(avg_width * 0.4, 5.0)
     
-    # 🆕 개선된 확률 계산 (시그모이드 함수)
-    probability = 1 / (1 + np.exp(-(score - 50) / 10))
-    probability = min(probability, 0.95)
+    # 🔥 보수적 확률 계산 (선형 스케일 복구 + 더 엄격한 기준)
+    # 85점 이상 = 85%
+    # 75점 = 75%
+    # 65점 = 65%
+    # 55점 = 55%
+    # 50점 이하 = 50%
+    if score >= 85:
+        probability = 0.85
+    elif score >= 50:
+        probability = score / 100  # 선형 스케일
+    else:
+        probability = 0.50  # 최소 50%
     
     return {
         'rebound_score': score,
@@ -349,7 +358,7 @@ def analyze_multi_timeframe_bb_alignment(ticker_symbol):
     try:
         # 🆕 5분봉만 가져와서 모든 시간프레임 계산
         df_5m = pyupbit.get_ohlcv(ticker_symbol, interval="minute5", count=100)
-        time.sleep(0.15)  # API 안전 간격
+        time.sleep(0.2)  # API 안전 간격
         
         if df_5m is None or len(df_5m) < 100:
             return None
@@ -572,7 +581,7 @@ def calculate_position_size(total_asset, crypto_value, crypto_limit, krw_balance
 
 # ==================== 메인 매수 함수 ====================
 
-def trade_buy(upbit, ticker=None, send_discord_message=None):
+def trade_buy(ticker=None):
     """
     🚀 초단기 복리 매수 시스템 v5.1 - 안정성 강화
     
@@ -582,19 +591,21 @@ def trade_buy(upbit, ticker=None, send_discord_message=None):
     3. 디버깅 출력 개선
     4. 반등 예측 정확도 향상
     """
+    # 전역 변수 가져오기 (기존 코드와 호환)
+    global upbit, send_discord_message
     
     def analyze_ticker_enhanced(ticker_symbol):
         """🆕 강화된 종목 분석 (API 호출 최소화)"""
         try:
-            print(f"  └─ {ticker_symbol} 분석 중...", end=" ")
+            # print(f"  └─ {ticker_symbol} 분석 중...", end=" ")
             
             # 🆕 [핵심 개선] 5분봉 1회만 호출
             df_5m = pyupbit.get_ohlcv(ticker_symbol, interval="minute5", count=100)
-            time.sleep(0.12)  # API 안전 간격
+            time.sleep(0.2)  # API 안전 간격
             
             # 🆕 1시간봉 1회 호출 (추가)
             df_1h = pyupbit.get_ohlcv(ticker_symbol, interval="minute60", count=50)
-            time.sleep(0.12)
+            time.sleep(0.2)
             
             current_price = pyupbit.get_current_price(ticker_symbol)
             
@@ -659,7 +670,7 @@ def trade_buy(upbit, ticker=None, send_discord_message=None):
             resistance_5m = np.max(df_5m['high'].values[-20:])
             resistance_clearance = (resistance_5m - target_price_2pct) / target_price_2pct * 100
             
-            print("✓")
+            # print("✓")
             
             return {
                 'valid': True,
@@ -690,7 +701,7 @@ def trade_buy(upbit, ticker=None, send_discord_message=None):
             }
             
         except Exception as e:
-            print(f"❌ 오류: {e}")
+            print(f"❌ 오류: {t} {e}")
             return {'valid': False}
     
     def calculate_enhanced_signal_score(indicators):
@@ -797,7 +808,7 @@ def trade_buy(upbit, ticker=None, send_discord_message=None):
         print(f"❌ 잔고 부족 (최소 {MIN_ORDER:,}원 필요)")
         return "Insufficient balance", None
     
-    crypto_limit = total_asset * 0.80
+    crypto_limit = total_asset
     if crypto_value >= crypto_limit:
         print(f"❌ 포지션 상한 도달 ({crypto_value:,.0f}/{crypto_limit:,.0f})")
         return "Position limit reached", None
@@ -822,11 +833,26 @@ def trade_buy(upbit, ticker=None, send_discord_message=None):
             print("❌ 분석 가능한 종목 없음")
             return "No tickers available", None
         
-        # 1차 스크리닝
+        # [1차 스크리닝] 부분의 print 문 수정
+
+        # 기존 전체 출력 대신 카운터 변수 추가
+
         print("\n[1차 스크리닝]")
         primary = []
         
+        # 카운터 초기화
+        total_analyzed = 0
+        fail_counts = {
+            '일봉급등': 0,
+            '전일급등': 0,
+            '가격범위': 0,
+            'BB전환없음': 0,
+            '반등확률부족': 0,
+            '점수부족': 0
+        }
+
         for t in candidates:
+            total_analyzed += 1
             analysis = analyze_ticker_enhanced(t)
             
             if not analysis['valid']:
@@ -840,14 +866,17 @@ def trade_buy(upbit, ticker=None, send_discord_message=None):
             # [필터 1] 일봉 급등 제외
             if ind['daily_change_from_open'] > 0.5:
                 fail_reason = "일봉급등"
+                fail_counts['일봉급등'] += 1
             
             # [필터 2] 전일 급등 제외
             elif ind['daily_change_from_prev'] > 8.0:
                 fail_reason = "전일급등"
+                fail_counts['전일급등'] += 1
             
             # [필터 3] 가격 범위
-            elif not (50 <= analysis['current_price'] <= 200000):
+            elif not (500 <= analysis['current_price'] <= 200000):
                 fail_reason = "가격범위"
+                fail_counts['가격범위'] += 1
             
             # [필터 4] BB 전환 시그널 필수
             else:
@@ -861,19 +890,22 @@ def trade_buy(upbit, ticker=None, send_discord_message=None):
                 
                 if not has_bb_signal:
                     fail_reason = "BB전환없음"
+                    fail_counts['BB전환없음'] += 1
             
-            # [필터 5] 반등 가능성 40% 이상
+            # [필터 5] 반등 가능성 50% 이상
             if fail_reason is None:
                 rebound = ind.get('rebound_potential')
-                if rebound and rebound['probability'] < 0.40:
+                if rebound and rebound['probability'] < 0.50:
                     fail_reason = f"반등확률{rebound['probability']*100:.0f}%"
+                    fail_counts['반등확률부족'] += 1
             
             # 신호 점수 계산
             score, signals = calculate_enhanced_signal_score(ind)
             
-            # 결과 출력
+            # 결과 처리 (개별 출력 삭제)
             if fail_reason:
-                print(f"  └─ {t}: ❌ {fail_reason}")
+                pass  # 카운트만 하고 출력 안함
+                # print(f"  └─ {t}: ❌ {fail_reason}")
             elif score >= 60:
                 primary.append({
                     'ticker': t,
@@ -881,13 +913,31 @@ def trade_buy(upbit, ticker=None, send_discord_message=None):
                     'signals': signals,
                     'analysis': analysis
                 })
-                print(f"  └─ {t}: ✅ {score:.0f}점 ({', '.join(signals[:2])})")
+                # print(f"  └─ {t}: ✅ {score:.0f}점 ({', '.join(signals[:2])})")
             else:
-                print(f"  └─ {t}: ❌ 점수부족({score:.0f}점)")
+                fail_counts['점수부족'] += 1
+                # print(f"  └─ {t}: ❌ 점수부족({score:.0f}점)")
             
             time.sleep(0.05)  # API 안전 간격
+
+        # 🆕 최종 요약만 출력
+        print(f"  └─ 총 {total_analyzed}개 분석 | 선정 {len(primary)}개 | 미선정 {total_analyzed - len(primary)}개")
+        fail_summary = [f"{reason} {count}개" for reason, count in fail_counts.items() if count > 0]
+        if fail_summary:
+            print(f"  └─ 미선정 사유: {', '.join(fail_summary)}")
+
+            
+            # 🆕 요약 보고서 출력
+            # print(f"\n  └─ 총 {total_analyzed}개 분석 완료")
+            # print(f"  └─ 미선정 사유: ", end="")
+            # fail_summary = [f"{reason} {count}개" for reason, count in fail_counts.items() if count > 0]
+            # if fail_summary:
+            #     print(", ".join(fail_summary))
+            # else:
+            #     print("없음")
+
+        print(f"\n[1차 선별 결과] ✅ {len(primary)}개 종목 선정")
         
-        print(f"\n[1차 선별 결과] {len(primary)}개 종목")
         
         if not primary:
             print("❌ 조건 충족 종목 없음")
@@ -1318,7 +1368,7 @@ def trade_sell(ticker):
     
     # 데이터 수집
     df_5m = pyupbit.get_ohlcv(ticker, interval="minute5", count=50)
-    time.sleep(0.05)
+    time.sleep(0.2)
     
     if df_5m is None or len(df_5m) < 20:
         return None
@@ -1374,7 +1424,7 @@ def trade_sell(ticker):
         # 실시간 데이터 업데이트 (5회마다)
         if attempt % 5 == 0:
             df_5m_live = pyupbit.get_ohlcv(ticker, interval="minute5", count=50)
-            time.sleep(0.05)
+            time.sleep(0.2)
             if df_5m_live is not None and len(df_5m_live) >= 20:
                 closes = df_5m_live['close'].values
                 volumes = df_5m_live['volume'].values
@@ -1413,7 +1463,7 @@ def trade_sell(ticker):
     
     # 최종 데이터
     df_final = pyupbit.get_ohlcv(ticker, interval="minute5", count=50)
-    time.sleep(0.05)
+    time.sleep(0.2)
     
     if df_final is not None and len(df_final) >= 20:
         closes_final = df_final['close'].values
