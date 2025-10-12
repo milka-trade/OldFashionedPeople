@@ -73,8 +73,8 @@ def get_top_volume_tickers():
     
     STRATEGIC_COINS = [
         "KRW-BTC","KRW-ETH","KRW-XRP","KRW-SOL","KRW-TRX","KRW-DOGE","KRW-ADA","KRW-LINK","KRW-BCH","KRW-XLM",
-            "KRW-AVAX","KRW-SUI","KRW-HBAR","KRW-MNT","KRW-SHIB","KRW-DOT","KRW-CRO","KRW-UNI","KRW-AAVE","KRW-NEAR",
-            "KRW-PEPE","KRW-ENA","KRW-APT","KRW-ETC","KRW-ONDO","KRW-POL","KRW-ALGO","KRW-ARB","KRW-VET","KRW-BONK"
+        "KRW-AVAX","KRW-SUI","KRW-HBAR","KRW-MNT","KRW-SHIB","KRW-DOT","KRW-CRO","KRW-UNI","KRW-AAVE","KRW-NEAR",
+        "KRW-PEPE","KRW-ENA","KRW-APT","KRW-ETC","KRW-ONDO","KRW-POL","KRW-ALGO","KRW-ARB","KRW-VET","KRW-BONK"
     ]
     
     print("=" * 50)
@@ -556,9 +556,9 @@ def calculate_position_size(total_asset, crypto_value, crypto_limit, krw_balance
     max_krw = krw_balance * 0.995
     
     if total_asset < 1_000_000:
-        max_position_ratio = 0.50
+        max_position_ratio = 0.80
     elif total_asset < 10_000_000:
-        max_position_ratio = 0.30
+        max_position_ratio = 0.50
     else:
         max_position_ratio = 0.20
     
@@ -865,7 +865,7 @@ def trade_buy(ticker=None):
             fail_reason = None
             
             # [필터 1] 일봉 급등 제외
-            if ind['daily_change_from_open'] > 0.5:
+            if ind['daily_change_from_open'] > 2.0:
                 fail_reason = "일봉급등"
                 fail_counts['일봉급등'] += 1
             
@@ -875,7 +875,7 @@ def trade_buy(ticker=None):
                 fail_counts['전일급등'] += 1
             
             # [필터 3] 가격 범위
-            elif not (500 <= analysis['current_price'] <= 200000):
+            elif not (100 <= analysis['current_price']):
                 fail_reason = "가격범위"
                 fail_counts['가격범위'] += 1
             
@@ -926,16 +926,6 @@ def trade_buy(ticker=None):
         fail_summary = [f"{reason} {count}개" for reason, count in fail_counts.items() if count > 0]
         if fail_summary:
             print(f"  └─ 미선정 사유: {', '.join(fail_summary)}")
-
-            
-            # 🆕 요약 보고서 출력
-            # print(f"\n  └─ 총 {total_analyzed}개 분석 완료")
-            # print(f"  └─ 미선정 사유: ", end="")
-            # fail_summary = [f"{reason} {count}개" for reason, count in fail_counts.items() if count > 0]
-            # if fail_summary:
-            #     print(", ".join(fail_summary))
-            # else:
-            #     print("없음")
 
         print(f"\n[1차 선별 결과] ✅ {len(primary)}개 종목 선정")
         
