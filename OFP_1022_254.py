@@ -1042,6 +1042,7 @@ def trade_buy(ticker=None):
     can_buy = all(conditions.values())
     
     print(f"\n  └─ 매수 가능: {'✅ 가능' if can_buy else '❌ 불가'}")
+    send_discord_message(f"{selected_ticker} [STEP 5] 매수 가능 : {'✅ 가능' if can_buy else '❌ 불가'}")
     
     if not can_buy:
         print("\n[결과] 조건 미충족으로 매수 보류")
