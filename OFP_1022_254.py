@@ -74,7 +74,7 @@ def get_top_volume_tickers():
     STRATEGIC_COINS = [
         "KRW-BTC","KRW-ETH","KRW-XRP","KRW-SOL","KRW-TRX","KRW-DOGE","KRW-ADA","KRW-LINK","KRW-BCH","KRW-XLM",
         "KRW-AVAX","KRW-SUI","KRW-HBAR","KRW-MNT","KRW-SHIB","KRW-DOT","KRW-CRO","KRW-UNI","KRW-AAVE","KRW-NEAR",
-        "KRW-PEPE","KRW-ENA","KRW-APT","KRW-ETC","KRW-ONDO","KRW-POL","KRW-ALGO","KRW-ARB","KRW-VET","KRW-BONK"
+        "KRW-ENA","KRW-APT","KRW-ETC","KRW-ONDO","KRW-POL","KRW-ALGO","KRW-ARB"  #"KRW-PEPE","KRW-VET","KRW-BONK"
     ]
     
     print("=" * 50)
@@ -846,7 +846,7 @@ def trade_buy(ticker=None):
         fail_counts = {
             '일봉급등': 0,
             '전일급등': 0,
-            '가격범위': 0,
+            '가격범위이탈': 0,
             'BB전환없음': 0,
             '반등확률부족': 0,
             '점수부족': 0
@@ -876,8 +876,8 @@ def trade_buy(ticker=None):
             
             # [필터 3] 가격 범위
             elif not (100 <= analysis['current_price']):
-                fail_reason = "가격범위"
-                fail_counts['가격범위'] += 1
+                fail_reason = "가격범위이탈"
+                fail_counts['가격범위이탈'] += 1
             
             # [필터 4] BB 전환 시그널 필수
             else:
