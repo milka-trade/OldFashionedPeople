@@ -77,9 +77,9 @@ def get_top_volume_tickers():
         "KRW-ENA","KRW-APT","KRW-ETC","KRW-ONDO","KRW-POL","KRW-ALGO","KRW-ARB"  #"KRW-PEPE","KRW-VET","KRW-BONK"
     ]
     
-    print("=" * 50)
-    print("🎯 전략 대상: 메이저 코인 (고정)")
-    print("=" * 50)    
+    # print("=" * 50)
+    # print("🎯 전략 대상: 메이저 코인 (고정)")
+    # print("=" * 50)    
     return STRATEGIC_COINS
     
 def calculate_rsi(closes, period=14):
@@ -789,9 +789,9 @@ def trade_buy(ticker=None):
     
     # ==================== 메인 로직 시작 ====================
     
-    print("\n" + "=" * 60)
-    print("[START] 복리 매수 시스템 v5.1 - BB 전환점 특화 (안정성 강화)")
-    print("=" * 60)
+    # print("\n" + "=" * 60)
+    # print("[START] 복리 매수 시스템 v5.1 - BB 전환점 특화 (안정성 강화)")
+    # print("=" * 60)
     
     # ===== STEP 1: 자산 현황 =====
     print("\n[STEP 1] 자산 현황 확인")
@@ -865,7 +865,7 @@ def trade_buy(ticker=None):
             fail_reason = None
             
             # [필터 1] 일봉 급등 제외
-            if ind['daily_change_from_open'] > 2.0:
+            if ind['daily_change_from_open'] > 3.0:
                 fail_reason = "일봉급등"
                 fail_counts['일봉급등'] += 1
             
@@ -1730,12 +1730,12 @@ def buying_logic():
             
             # ========== 4. 통합 매수 로직 실행 (종목 선정 + 매수) ==========
             if krw_balance > min_krw:
-                print(f"매수 가능 잔고: {krw_balance:,.0f}원")
+                # print(f"매수 가능 잔고: {krw_balance:,.0f}원")
                 
                 try:
                     # trade_buy()가 종목 선정부터 매수까지 모두 처리
-                    buy_time = datetime.now().strftime('%m/%d %H:%M:%S')
-                    print(f"[{buy_time}] 최적 종목 자동 선정 + 매수 시작...")
+                    # buy_time = datetime.now().strftime('%m/%d %H:%M:%S')
+                    # print(f"[{buy_time}] 최적 종목 자동 선정 + 매수 시작...")
                     
                     result = trade_buy(ticker=None)  # None이면 자동 선정 모드
                     
@@ -1753,30 +1753,30 @@ def buying_logic():
                         
                         if reason == "No candidates found":
                             wait_time = 10 if has_holdings else 30
-                            print(f"매수할 코인 없음. {wait_time}초 후 재탐색...")
+                            print(f"매수할 코인 없음. {wait_time}초 후 재탐색...\n")
                             time.sleep(wait_time)
                             
                         elif reason == "Conditions not met":
-                            print("매수 조건 미충족. 20초 후 재시도...")
+                            print("매수 조건 미충족. 20초 후 재시도...\n")
                             time.sleep(20)
                             
                         elif reason == "Position limit reached":
                             wait_time = 60 if has_holdings else 120
-                            print(f"포지션 상한 도달. {wait_time}초 대기...")
+                            print(f"포지션 상한 도달. {wait_time}초 대기...\n")
                             time.sleep(wait_time)
                             
                         elif reason == "Insufficient balance":
                             wait_time = 60 if has_holdings else 120
-                            print(f"잔고 부족. {wait_time}초 대기...")
+                            print(f"잔고 부족. {wait_time}초 대기...\n")
                             time.sleep(wait_time)
                             
                         else:
                             # 기타 실패 사유
-                            print(f"매수 실패: {reason}. 30초 후 재시도...")
+                            print(f"매수 실패: {reason}. 30초 후 재시도...\n")
                             time.sleep(30)
                     else:
                         # 예상치 못한 결과
-                        print("알 수 없는 결과. 30초 후 재시도...")
+                        print("알 수 없는 결과. 30초 후 재시도...\n")
                         time.sleep(30)
                         
                 except Exception as e:
@@ -1786,11 +1786,11 @@ def buying_logic():
                     
             else:
                 wait_time = 60 if has_holdings else 120
-                print(f"매수 자금 부족: {krw_balance:,.0f}원. {wait_time}초 대기...")
+                print(f"매수 자금 부족: {krw_balance:,.0f}원. {wait_time}초 대기...\n")
                 time.sleep(wait_time)
                 
         except KeyboardInterrupt:
-            print("\n프로그램 종료 요청...")
+            print("\n프로그램 종료 요청...\n")
             break
             
         except Exception as e:
@@ -1804,7 +1804,7 @@ if __name__ == "__main__":
     # trade_msg = f'🚀 {trade_start} 통합 복리 매수 시스템 v3.0\n'
     trade_msg = f'📊 설정: 수익률 {min_rate}%~{max_rate}% | 매도시도 {sell_time}회 | 손절 {cut_rate}%\n'
     trade_msg += f'📈 RSI 매수: {rsi_buy_s}~{rsi_buy_e} | RSI 매도: {rsi_sell_s}~{rsi_sell_e}\n'
-    trade_msg += f'💡 개선사항: 조건완화, 병렬처리, 자동보고'
+    # trade_msg += f'💡 개선사항: 조건완화, 병렬처리, 자동보고'
     
     print(trade_msg)
     send_discord_message(trade_msg)
