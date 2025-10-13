@@ -785,15 +785,15 @@ def trade_buy(ticker=None):
     4. 경로별 손절가 자동 설정
     """    
     # ===== STEP 1: 자산 현황 =====
-    print("\n[STEP 1] 자산 현황 확인")
+    # print("\n[STEP 1] 자산 현황 확인")
     
     krw_balance = get_krw_balance(upbit)
     crypto_value = get_total_crypto_value(upbit)
     total_asset = crypto_value + krw_balance
     
-    print(f"  └─ 총 자산: {total_asset:,.0f}원")
-    print(f"  └─ 암호화폐: {crypto_value:,.0f}원 ({crypto_value/total_asset*100:.1f}%)")
-    print(f"  └─ KRW 잔고: {krw_balance:,.0f}원")
+    # print(f"  └─ 총 자산: {total_asset:,.0f}원")
+    # print(f"  └─ 암호화폐: {crypto_value:,.0f}원 ({crypto_value/total_asset*100:.1f}%)")
+    # print(f"  └─ KRW 잔고: {krw_balance:,.0f}원")
     
     MIN_ORDER = 5000
     if krw_balance < MIN_ORDER:
@@ -806,16 +806,16 @@ def trade_buy(ticker=None):
         return "Position limit reached", None
     
     # ===== STEP 2: 종목 선정/검증 =====
-    print("\n[STEP 2] 종목 선정")
+    # print("\n[STEP 2] 종목 선정")
     
     if ticker is None:
-        print("  └─ 자동 선정 모드")
+        # print("  └─ 자동 선정 모드")
         
         try:
             held_coins = get_held_coins(upbit)
             all_tickers = get_top_volume_tickers()
             candidates = [t for t in all_tickers if t not in held_coins]
-            print(f"  └─ 분석 대상: {len(candidates)}개 (보유 {len(held_coins)}개 제외)")
+            # print(f"  └─ 분석 대상: {len(candidates)}개 (보유 {len(held_coins)}개 제외)")
         except Exception as e:
             print(f"❌ 종목 조회 실패: {e}")
             return "Ticker fetch failed", None
@@ -824,7 +824,7 @@ def trade_buy(ticker=None):
             print("❌ 분석 가능한 종목 없음")
             return "No tickers available", None
         
-        print("\n[1차 스크리닝]")
+        # print("\n[1차 스크리닝]")
         primary = []
         
         total_analyzed = 0
@@ -896,15 +896,17 @@ def trade_buy(ticker=None):
             
             time.sleep(0.05)
 
-        print(f"  └─ 총 {total_analyzed}개 분석 | 선정 {len(primary)}개 | 미선정 {total_analyzed - len(primary)}개")
+        # print(f"  └─ 총 {total_analyzed}개 분석 | 선정 {len(primary)}개 | 미선정 {total_analyzed - len(primary)}개")
         fail_summary = [f"{reason} {count}개" for reason, count in fail_counts.items() if count > 0]
+        # if fail_summary:
+        #     print(f"  └─ 미선정 사유: {', '.join(fail_summary)}")
+
+        print(f"\n[1차 선별 결과] ✅총 {total_analyzed}개 분석 | {len(primary)}개 종목 선정 | 미선정 {total_analyzed - len(primary)}개")
         if fail_summary:
             print(f"  └─ 미선정 사유: {', '.join(fail_summary)}")
-
-        print(f"\n[1차 선별 결과] ✅ {len(primary)}개 종목 선정")
         
         if not primary:
-            print("❌ 조건 충족 종목 없음")
+            # print("❌ 조건 충족 종목 없음")
             return "No candidates found", None
         
         primary.sort(key=lambda x: x['score'], reverse=True)
