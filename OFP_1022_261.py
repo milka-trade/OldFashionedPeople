@@ -357,7 +357,7 @@ def analyze_multi_timeframe_bb_alignment(ticker_symbol):
     try:
         # 🆕 5분봉만 가져와서 모든 시간프레임 계산
         df_5m = pyupbit.get_ohlcv(ticker_symbol, interval="minute5", count=100)
-        time.sleep(0.35)  # API 안전 간격
+        time.sleep(0.5)  # API 안전 간격
         
         if df_5m is None or len(df_5m) < 100:
             return None
@@ -584,15 +584,15 @@ def analyze_ticker_enhanced(ticker_symbol):
         
         # 🆕 [핵심 개선] 5분봉 1회만 호출
         df_5m = pyupbit.get_ohlcv(ticker_symbol, interval="minute5", count=100)
-        time.sleep(0.35)  # API 안전 간격
+        time.sleep(0.5)  # API 안전 간격
         
         # 🆕 15분봉 추가 (기대값 계산용)
         df_15m = pyupbit.get_ohlcv(ticker_symbol, interval="minute15", count=50)
-        time.sleep(0.35)
+        time.sleep(0.5)
         
         # 🆕 1시간봉 1회 호출 (추가)
         df_1h = pyupbit.get_ohlcv(ticker_symbol, interval="minute60", count=50)
-        time.sleep(0.35)
+        time.sleep(0.5)
         
         current_price = pyupbit.get_current_price(ticker_symbol)
         
@@ -1364,7 +1364,7 @@ def trade_sell(ticker):
     
     # 데이터 수집
     df_5m = pyupbit.get_ohlcv(ticker, interval="minute5", count=50)
-    time.sleep(0.35)
+    time.sleep(0.5)
     
     if df_5m is None or len(df_5m) < 20:
         return None
@@ -1420,7 +1420,7 @@ def trade_sell(ticker):
         # 실시간 데이터 업데이트 (5회마다)
         if attempt % 5 == 0:
             df_5m_live = pyupbit.get_ohlcv(ticker, interval="minute5", count=50)
-            time.sleep(0.35)
+            time.sleep(0.5)
             if df_5m_live is not None and len(df_5m_live) >= 20:
                 closes = df_5m_live['close'].values
                 volumes = df_5m_live['volume'].values
@@ -1460,7 +1460,7 @@ def trade_sell(ticker):
     
     # 최종 데이터
     df_final = pyupbit.get_ohlcv(ticker, interval="minute5", count=50)
-    time.sleep(0.35)
+    time.sleep(0.5)
     
     if df_final is not None and len(df_final) >= 20:
         closes_final = df_final['close'].values
@@ -1778,7 +1778,7 @@ def buying_logic():
                             
                         else:
                             # 기타 실패 사유
-                            print(f"매수 실패: {reason}. 30초 후 재시도...\n")
+                            # print(f"매수 실패: {reason}. 30초 후 재시도...\n")
                             time.sleep(30)
                     else:
                         # 예상치 못한 결과
