@@ -73,9 +73,9 @@ def get_top_volume_tickers():
     """
     
     STRATEGIC_COINS = [
-        "KRW-ETH","KRW-XRP","KRW-SOL","KRW-ADA","KRW-LINK","KRW-BCH","KRW-XLM",  #"KRW-BTC",
-        "KRW-AVAX","KRW-SUI","KRW-MNT","KRW-DOT","KRW-UNI","KRW-AAVE","KRW-NEAR",  #,"KRW-SHIB", "KRW-HBAR","KRW-CRO",
-        "KRW-ENA","KRW-APT","KRW-ETC","KRW-ONDO","KRW-POL"  #"KRW-PEPE","KRW-VET","KRW-BONK","KRW-ALGO",,"KRW-ARB"
+        "KRW-BTC","KRW-ETH","KRW-XRP","KRW-SOL","KRW-ADA","KRW-LINK","KRW-BCH","KRW-XLM"  #
+        # "KRW-AVAX","KRW-SUI","KRW-MNT","KRW-DOT","KRW-UNI","KRW-AAVE","KRW-NEAR",  #,"KRW-SHIB", "KRW-HBAR","KRW-CRO",
+        # "KRW-ENA","KRW-APT","KRW-ETC","KRW-ONDO","KRW-POL"  #"KRW-PEPE","KRW-VET","KRW-BONK","KRW-ALGO",,"KRW-ARB"
     ]
     
     return STRATEGIC_COINS
