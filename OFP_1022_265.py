@@ -1130,7 +1130,7 @@ def trade_buy(ticker=None):
     
     # ───────────── 매수 금액 계산 ─────────────
     # 전체 자산의 25% 매수
-    buy_size = total_asset * 0.25
+    buy_size = total_asset * max_position_ratio
     
     # ───────────── 제약 조건 적용 ─────────────
     # 1. 포지션 상한까지 남은 공간
@@ -1503,7 +1503,7 @@ def trade_sell(ticker):
         profit_loss_ratio = 2.0
         risk_level = "기본"
         
-        print(f"📊 [{ticker}] 기본전략 적용: 손절{dynamic_stop_loss:.1f}% | 목표{target_profit:.1f}%")
+        # print(f"📊 [{ticker}] 기본전략 적용: 손절{dynamic_stop_loss:.1f}% | 목표{target_profit:.1f}%")
     
     # 데이터 수집
     df_5m = pyupbit.get_ohlcv(ticker, interval="minute5", count=50)
