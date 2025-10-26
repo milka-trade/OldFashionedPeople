@@ -27,7 +27,7 @@ count_200 = 200
 # rsi_buy_e = 45
 # rsi_sell_s = 65
 # rsi_sell_e = 80
-max_position_ratio = 0.25
+# max_position_ratio = 0.35
 
 def get_user_input():
     while True:
@@ -35,13 +35,14 @@ def get_user_input():
             min_rate = float(input("최소 수익률 (예: 1.0): "))
             max_rate = float(input("최대 수익률 (예: 5.0): "))
             sell_time = int(input("매도감시횟수 (예: 10): "))
+            max_position_ratio = float(input("매도포지션 (예: 0.35): "))
             break
         except ValueError:
             print("잘못된 입력입니다. 다시 시도하세요.")
 
-    return min_rate, max_rate, sell_time
+    return min_rate, max_rate, sell_time, max_position_ratio
 # 함수 호출 및 결과 저장
-min_rate, max_rate, sell_time = get_user_input() #
+min_rate, max_rate, sell_time, max_position_ratio = get_user_input() #
 
 second = 1.0
 min_krw = 10_000
