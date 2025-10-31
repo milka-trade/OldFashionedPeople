@@ -513,7 +513,7 @@ class OnePercentHunter:
             potential_1pct = bb_width * 0.4
             can_reach_1pct = potential_1pct >= 1.0
             
-            print(f"   ✅ {ticker} 분석 완료 (BB:{bb_pos*100:.0f}% RSI:{rsi:.0f})")
+            # print(f"   ✅ {ticker} 분석 완료 (BB:{bb_pos*100:.0f}% RSI:{rsi:.0f})")
             
             return {
                 'valid': True,
