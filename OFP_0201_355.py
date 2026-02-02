@@ -481,9 +481,6 @@ V81_RECOVERY_BB_MAX = 35               # 반등 초기 BB 상한
 # 일봉 상태별 모멘텀 기준
 V81_MOMENTUM_DAILY_BULL_UP = 40        # 일봉 양봉 + 상승: 40점
 V81_MOMENTUM_DAILY_BULL_DOWN = 50      # 일봉 양봉 + 하락: 50점
-V81_MOMENTUM_DAILY_BEAR_WEAK = 65      # 일봉 음봉 + 약한 하락: 65점
-V81_MOMENTUM_DAILY_BEAR_STRONG = 75    # 일봉 음봉 + 강한 하락: 75점
-V81_DAILY_STRONG_DROP_THRESHOLD = -1.0 # 강한 하락 기준 (%)
 
 # CRASH_RECOVERY 트리거
 V81_CRASH_LOOKBACK_CANDLES = 24        # 급락 감지 범위 (15분봉 24개 = 6시간)
@@ -2245,23 +2242,11 @@ def evolution_80_buy_signal(df_15m, df_5m, ticker):
     [v8.1] 모멘텀 기반 최적 매수 신호 - 반등 초기 포착 강화
     
     [v8.1 핵심 변경사항]
-    1. 로직 순서 변경: 트리거 → 일봉 → 모멘텀 (기존: 일봉 → 모멘텀 → 트리거)
+    1. 로직 순서 변경: 트리거 → 일봉 → 모멘텀
     2. 일봉 상태별 동적 모멘텀 기준 적용
     3. 반등 초기 보너스 점수 반영
     4. CRASH_RECOVERY 트리거 추가
-    
-    핵심 철학:
-    - "오르고 있어서"가 아니라 "오를 힘이 있어서" 매수
-    - 일봉이 양봉이면 15분봉 기준 완화 (반등 초기 포착)
-    - 트리거 먼저 확인하여 타이밍 최적화
-    
-    Args:
-        df_15m: 15분봉 DataFrame (200개, 지표 포함)
-        df_5m: 5분봉 DataFrame (100개, 지표 포함) - 선택적
-        ticker: 코인 티커
-    
-    Returns:
-        dict: 매수 신호 정보
+    5. [추가] 일봉 음봉 시 매수 완전 차단
     """
     try:
         # 기본 응답 템플릿
@@ -2288,7 +2273,7 @@ def evolution_80_buy_signal(df_15m, df_5m, ticker):
             return base_response
         
         # ========================================
-        # [v8.1 변경] Step 1: 트리거 먼저 확인 (순서 변경!)
+        # Step 1: 트리거 먼저 확인 (순서 변경!)
         # ========================================
         trigger = detect_entry_trigger(df_15m, df_5m)
         base_response['trigger_type'] = trigger.get('type')
@@ -2315,24 +2300,24 @@ def evolution_80_buy_signal(df_15m, df_5m, ticker):
         daily_change = daily_info.get('daily_change', 0)
         
         # ========================================
-        # [v8.1 핵심] Step 3: 일봉 상태별 동적 모멘텀 기준 결정
+        # [v8.1 핵심] Step 2.5: 일봉 음봉 시 매수 차단
         # ========================================
-        if daily_bullish and daily_change > 0:
+        if not daily_bullish:
+            base_response['reason'] = f"일봉음봉 매수금지 (당일 {daily_change:+.1f}%)"
+            base_response['market_condition'] = 'DAILY_BEARISH'
+            return base_response
+        
+        # ========================================
+        # Step 3: 일봉 양봉 확인됨 → 동적 모멘텀 기준 결정
+        # ========================================
+        if daily_change > 0:
             # 일봉 양봉 + 당일 상승 → 가장 완화된 기준
             min_momentum = V81_MOMENTUM_DAILY_BULL_UP  # 40점
             daily_status = "양봉+상승"
-        elif daily_bullish and daily_change <= 0:
+        else:
             # 일봉 양봉 + 장중 하락 → 중간 기준
             min_momentum = V81_MOMENTUM_DAILY_BULL_DOWN  # 50점
             daily_status = "양봉+하락"
-        elif not daily_bullish and daily_change > V81_DAILY_STRONG_DROP_THRESHOLD:
-            # 일봉 음봉 + 약한 하락 → 엄격한 기준
-            min_momentum = V81_MOMENTUM_DAILY_BEAR_WEAK  # 65점
-            daily_status = "음봉+약락"
-        else:
-            # 일봉 음봉 + 강한 하락 → 매우 엄격한 기준
-            min_momentum = V81_MOMENTUM_DAILY_BEAR_STRONG  # 75점
-            daily_status = "음봉+강락"
         
         # ========================================
         # Step 4: 가격 위치 확인 (BB 기준)
@@ -2340,15 +2325,12 @@ def evolution_80_buy_signal(df_15m, df_5m, ticker):
         bb_position = current['bb_position']
         rsi = current['rsi']
         
-        # BB 위치 체크 - 일봉 양봉이면 범위 확장
-        bb_max = V80_BUY_BB_EXTENDED if daily_bullish else V80_BUY_BB_MAX
-        
         if bb_position < V80_BUY_BB_MIN:
             base_response['reason'] = f"아직하락중 (BB {bb_position:.1f}% < {V80_BUY_BB_MIN}%)"
             return base_response
         
-        if bb_position > bb_max:
-            base_response['reason'] = f"이미상승 (BB {bb_position:.1f}% > {bb_max}%)"
+        if bb_position > V80_BUY_BB_EXTENDED:
+            base_response['reason'] = f"이미상승 (BB {bb_position:.1f}% > {V80_BUY_BB_EXTENDED}%)"
             return base_response
         
         # RSI 체크
@@ -2372,7 +2354,6 @@ def evolution_80_buy_signal(df_15m, df_5m, ticker):
         # ========================================
         confidence = min(100, (momentum['score'] + trigger['strength']) // 2)
         
-        # 반등 초기 보너스 적용 여부 표시
         recovery_tag = "[반등초기]" if momentum.get('is_recovery_start', False) else ""
         
         reason_parts = [
@@ -2385,7 +2366,6 @@ def evolution_80_buy_signal(df_15m, df_5m, ticker):
         if recovery_tag:
             reason_parts.insert(0, recovery_tag)
         
-        # 모멘텀 상세 사유 추가 (최대 1개)
         if momentum['details']:
             short_detail = momentum['details'][0].split('+')[0][:15]
             reason_parts.append(f"({short_detail})")
