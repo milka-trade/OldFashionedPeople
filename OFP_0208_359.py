@@ -41,15 +41,17 @@ class Colors:
 
 DEBUG_MODE = True
 TEST_MODE = False
-VERSION = "10.0 BOUNCE_HUNTER"
+VERSION = "10.2 BOUNCE_HUNTER"
 
 FIXED_STABLE_COINS = [
     "KRW-ETH", "KRW-XRP", "KRW-SOL",
     "KRW-ADA", "KRW-LINK", "KRW-BCH", "KRW-SUI"
 ]
 
-POSITION_SIZE_RATIO = 1
-MAX_HOLDINGS = 1
+POSITION_SIZE_RATIO = 0.5
+MAX_HOLDINGS = 2
+FIRST_BUY_RATIO = 0.5             # 1차 매수 비율 (가용현금의 50%)
+BUY_FEE_BUFFER = 0.995
 MAX_DAILY_TRADES = 999
 
 # Thread intervals
@@ -279,8 +281,8 @@ CANDLE_REVERSAL_LOOKBACK = 3           # 캔들 반등 확인 기간
 # ----------------------------------------
 # Phase 1: 일봉 양봉 필터 (대세 상승 확인)
 # ----------------------------------------
-V10_DAILY_RSI_MIN = 30                 # 일봉 RSI 하한
-V10_DAILY_RSI_MAX = 70                 # 일봉 RSI 상한
+# V10_DAILY_RSI_MIN = 30                 # 일봉 RSI 하한
+# V10_DAILY_RSI_MAX = 70                 # 일봉 RSI 상한
 V10_DAILY_BULLISH_DAYS_MIN = 2         # 최근 3일 중 최소 양봉 수 (3일 중)
 V10_DAILY_CONSECUTIVE_BEAR_MAX = 3     # 최대 연속 음봉 허용
 V10_DAILY_CHANGE_MAX = 5.0             # 당일 최대 등락률 (%) - 급등 차단
@@ -340,19 +342,19 @@ V10_DECLINE_THRESHOLD = 4              # 익절 권장 임계값
 # SECTION 8: Startup Message
 # ================================================================================
 
-VERSION = "10.0 BOUNCE_HUNTER"
+VERSION = "10.2 BOUNCE_HUNTER"
 
 print(f"\\n{Colors.BOLD}{Colors.CYAN}{'='*60}")
 print(f"EVOLUTION {VERSION}")
 print(f"{'='*60}")
-print(f"{Colors.GREEN}[v10.0] BOUNCE HUNTER - 다중 지표 반등 매수{Colors.ENDC}")
+print(f"{Colors.GREEN}[v10.2] BOUNCE HUNTER - 2단계 분할매수{Colors.ENDC}")
 print(f"   [핵심] 일봉 양봉 확인 → BB 하단 → 반등 신호 포착")
-print(f"   [매수] Phase1:일봉양봉 → Phase2:BB하단(5-35%) → Phase3:반등확인")
+print(f"   [매수] 1차:현금50% → 2차:잔여전량 (수수료버퍼 {BUY_FEE_BUFFER})")
 print(f"   [매도] 선행하락감지 → 트레일링스탑 → 손절-2.5%")
 print(f"")
 print(f"{Colors.YELLOW}Phase 3 반등 신호 (5개 중 3개+){Colors.ENDC}")
 print(f"   ① RSI 상승 전환")
-print(f"   ② Stochastic RSI 과매도 탈출 / 골든크로스")
+print(f"   ② Stochastic RSI 과매도 탈출 / 골든 크로스")
 print(f"   ③ MACD 히스토그램 전환 / 축소")
 print(f"   ④ 양봉 출현")
 print(f"   ⑤ 거래량 확인 (MA20 × 0.8+)")
@@ -361,7 +363,9 @@ print(f"{Colors.MAGENTA}THREADED EDITION{Colors.ENDC}")
 print(f"   Thread 1: 매수 ({BUY_THREAD_INTERVAL}초)")
 print(f"   Thread 2: 매도 ({SELL_THREAD_INTERVAL}초)")
 print(f"   Thread 3: 모니터 ({MONITOR_THREAD_INTERVAL}초)")
+print(f"   MAX_HOLDINGS: {MAX_HOLDINGS} | 1차:{FIRST_BUY_RATIO:.0%} 2차:전량")
 print(f"{'='*60}{Colors.ENDC}\\n")
+
 
 # ================================================================================
 # SECTION 9: Discord Notification Functions
@@ -641,11 +645,45 @@ def get_coin_analysis(ticker):
             print(f"{Colors.RED}[Coin Analysis Error] {ticker}: {e}{Colors.ENDC}")
         return None
 
+def format_reversal_detail(reversal):
+    """
+    [v10.2 신규] Phase 3 반등지표 압축 기호 생성
+    
+    각 지표의 충족/미충족을 기호로 표시:
+    R=RSI상승, S=SRSI, M=MACD, B=양봉(Bullish), V=거래량(Volume)
+    
+    예시 출력: "R✅S❌M✅B✅V❌(3/5)"
+    
+    Args:
+        reversal: calculate_reversal_score() 반환값
+    
+    Returns:
+        str: 압축된 지표 상태 문자열
+    """
+    try:
+        signals = reversal.get('signals', {})
+        score = reversal.get('score', 0)
+        
+        r = '✅' if signals.get('rsi_rising', False) else '❌'
+        s = '✅' if signals.get('stoch_rsi', False) else '❌'
+        m = '✅' if signals.get('macd', False) else '❌'
+        b = '✅' if signals.get('bullish', False) else '❌'
+        v = '✅' if signals.get('volume', False) else '❌'
+        
+        return f"R{r}S{s}M{m}B{b}V{v}({score}/5)"
+    except:
+        return f"({reversal.get('score', 0)}/5)"
+    
+
 def calculate_coin_status_for_report(ticker):
     """
-    [v10.1] 보고서용 코인 상태 분석
+    [v10.2] 보고서용 코인 상태 분석
     
-    모멘텀 함수를 대체하여 실제 매수로직 기반 정보 제공:
+    v10.2 변경사항:
+    - Phase 1: 일봉 RSI 필터 제거 반영 (check_daily_safety_filter 변경에 따라 자동 적용)
+    - Phase 3: 개별 지표 충족/미충족 상세 표시 (R✅S❌M✅B✅V❌ 형태)
+    
+    표시 정보:
     1. 일봉 양봉/음봉 + 등락률
     2. 일봉 저가/고가 대비 현재가 위치 (캔들파워)
     3. 매수 3-Phase 판정 결과 (Higher Low 정보 포함)
@@ -694,13 +732,13 @@ def calculate_coin_status_for_report(ticker):
                     power_emoji = '⚡'
                     power_label = '강세'
                 elif rise_from_low < 0.01:
-                    power_emoji = '💀'
+                    power_emoji = '👀'
                     power_label = '약세'
                 elif rise_from_low > drop_from_high * 2:
                     power_emoji = '⚡'
                     power_label = '강세'
                 elif drop_from_high > rise_from_low * 2:
-                    power_emoji = '💀'
+                    power_emoji = '👀'
                     power_label = '약세'
                 else:
                     power_emoji = '➡️'
@@ -794,11 +832,15 @@ def calculate_coin_status_for_report(ticker):
         
         # Phase 3: 반등 신호
         reversal = calculate_reversal_score(df_15m)
+        
+        # [v10.2 변경] 상세 지표 기호 생성
+        p3_detail = format_reversal_detail(reversal)
+        
         if reversal['bounce_confirmed']:
             p3_pass = True
-            p3_reason = f"반등{reversal['score']}/5"
+            p3_reason = p3_detail
         else:
-            p3_reason = f"반등{reversal['score']}/5"
+            p3_reason = p3_detail
             
             return {
                 'daily_status': daily_status, 'daily_emoji': daily_emoji,
@@ -1560,13 +1602,16 @@ def add_indicators(df):
 
 def check_daily_safety_filter(ticker):
     """
-    [v10.0] Phase 1: 일봉 양봉 필터 (대세 상승 확인)
+    [v10.2] Phase 1: 일봉 양봉 필터 (대세 상승 확인)
+    
+    ⚠️ v10.2 변경: 일봉 RSI 필터 제거
+    - 일봉은 "양봉/음봉" + "등락률" + "연속음봉"만 체크
+    - RSI, SRSI, MACD 등 기술지표 분석은 전부 15분봉(Phase 2, 3)에서 수행
     
     조건:
-    1. 오늘 양봉 OR 최근 3일 중 2일 양봉 (택1)
-    2. 일봉 RSI: 30~70
-    3. 3일 연속 음봉 아닐 것
-    4. 당일 등락률: -5% ~ +5%
+    1. 당일 등락률: -5% ~ +5% (급등/급락 차단)
+    2. 3일 연속 음봉 아닐 것
+    3. 오늘 양봉 OR 최근 3일 중 2일 양봉 (택1)
     
     Returns:
         dict: {safe, daily_change, reason, is_bullish, daily_bb, daily_rsi}
@@ -1599,8 +1644,8 @@ def check_daily_safety_filter(ticker):
         current = df_daily.iloc[-1]
         daily_open = current['open']
         daily_close = current['close']
-        daily_rsi = current['rsi']
-        daily_bb = current['bb_position']
+        daily_rsi = current['rsi']        # 반환용으로만 유지 (필터링에 사용 안 함)
+        daily_bb = current['bb_position'] # 반환용으로만 유지
         
         # 당일 등락률
         daily_change = ((daily_close - daily_open) / daily_open * 100) if daily_open > 0 else 0
@@ -1616,21 +1661,19 @@ def check_daily_safety_filter(ticker):
         # ========================================
         if daily_change > V10_DAILY_CHANGE_MAX:
             return {**base_info, 'safe': False, 'is_bullish': True,
-                    'reason': f'당일 급등 {daily_change:+.1f}% > +{V10_DAILY_CHANGE_MAX}%'}
+                    'reason': f'당일 급등 {daily_change:+.1f}%'}
         
         if daily_change < V10_DAILY_CHANGE_MIN:
             return {**base_info, 'safe': False, 'is_bullish': False,
-                    'reason': f'당일 급락 {daily_change:+.1f}% < {V10_DAILY_CHANGE_MIN}%'}
+                    'reason': f'당일 급락 {daily_change:+.1f}%'}
         
         # ========================================
-        # 체크 2: 일봉 RSI 범위
+        # [v10.2 삭제] 체크 2: 일봉 RSI 범위 → 제거
+        # RSI/SRSI/MACD 등 기술지표는 15분봉에서만 분석
         # ========================================
-        if daily_rsi < V10_DAILY_RSI_MIN or daily_rsi > V10_DAILY_RSI_MAX:
-            return {**base_info, 'safe': False, 'is_bullish': False,
-                    'reason': f'일봉 RSI {daily_rsi:.0f} (범위 {V10_DAILY_RSI_MIN}~{V10_DAILY_RSI_MAX})'}
         
         # ========================================
-        # 체크 3: 연속 음봉 체크
+        # 체크 2: 연속 음봉 체크 (기존 체크3 → 체크2로 번호 변경)
         # ========================================
         consecutive_bear = 0
         for i in range(-1, -4, -1):
@@ -1643,10 +1686,10 @@ def check_daily_safety_filter(ticker):
         
         if consecutive_bear >= V10_DAILY_CONSECUTIVE_BEAR_MAX:
             return {**base_info, 'safe': False, 'is_bullish': False,
-                    'reason': f'일봉 {consecutive_bear}일 연속 음봉'}
+                    'reason': f'{consecutive_bear}일 연속 음봉'}
         
         # ========================================
-        # 체크 4: 양봉 조건 (핵심)
+        # 체크 3: 양봉 조건 (핵심) (기존 체크4 → 체크3으로 번호 변경)
         # 오늘 양봉 OR 최근 3일 중 2일 양봉
         # ========================================
         is_today_bullish = daily_close > daily_open
@@ -1657,7 +1700,7 @@ def check_daily_safety_filter(ticker):
         
         if not is_today_bullish and not recent_bullish_ok:
             return {**base_info, 'safe': False, 'is_bullish': False,
-                    'reason': f'양봉 부족 (오늘 음봉, 최근3일 양봉 {bullish_days}개)'}
+                    'reason': f'양봉부족 (음봉, 최근{bullish_days}/3)'}
         
         # ========================================
         # 모든 체크 통과
@@ -1667,7 +1710,7 @@ def check_daily_safety_filter(ticker):
             **base_info,
             'safe': True,
             'is_bullish': is_today_bullish,
-            'reason': f'일봉OK ({bullish_reason}, RSI:{daily_rsi:.0f}, {daily_change:+.1f}%)'
+            'reason': f'일봉OK ({bullish_reason}, {daily_change:+.1f}%)'
         }
         
     except Exception as e:
@@ -2569,16 +2612,14 @@ def sync_held_coins_with_exchange():
 
 def execute_buy(ticker, signal):
     """
-    [v9.1] Execute buy order (thread safe)
+    [v10.2] 2단계 매수 실행 (thread safe)
     
-    - Equal position sizing: POSITION_SIZE_RATIO of total assets per trade
-    - Dynamic rebalancing: Asset evaluation on every buy
-    - Fee optimization: 0.9995x on final position
+    포지션 사이징:
+    - 보유 0개 (1차 매수): 가용현금 × FIRST_BUY_RATIO(50%) × BUY_FEE_BUFFER(0.995)
+    - 보유 1개+ (2차 매수): 가용현금 × BUY_FEE_BUFFER(0.995) (잔여 전량)
     
-    [v9.1 변경사항]
-    - held_coins에 BB 폭 관련 정보 추가 저장
-    - entry_bb_width, bb_width_zone, target_profit 저장
-    - ticker 저장 (매도 시 5분봉 조회용)
+    수수료 처리:
+    - BUY_FEE_BUFFER = 0.995 (Upbit 수수료 0.05% + 슬리피지 여유)
     """
     global daily_trade_count, total_trades, daily_buy_count
     
@@ -2603,6 +2644,9 @@ def execute_buy(ticker, signal):
                 if len(held_coins) >= MAX_HOLDINGS:
                     print(f"{Colors.YELLOW}[Buy Limit] 최대 보유 종목 도달 ({len(held_coins)}/{MAX_HOLDINGS}){Colors.ENDC}")
                     return False
+                
+                # 현재 보유 수 확인 (포지션 사이징용)
+                current_holding_count = len(held_coins)
             
             # ========================================
             # Step 1: 가용 현금(KRW) 우선 체크
@@ -2621,7 +2665,7 @@ def execute_buy(ticker, signal):
                 return False
             
             # ========================================
-            # Step 2: 총 자산 계산 (현금 + 모든 코인 평가액)
+            # Step 2: 총 자산 계산 (로그용)
             # ========================================
             try:
                 total_assets = get_total_balance()
@@ -2632,23 +2676,26 @@ def execute_buy(ticker, signal):
                 return False
             
             # ========================================
-            # Step 3: 목표 포지션 사이즈 계산
+            # Step 3: [v10.2 핵심] 포지션 사이징 - 보유 수 기반
             # ========================================
-            target_position_size = total_assets * POSITION_SIZE_RATIO
+            if current_holding_count == 0:
+                # 1차 매수: 가용현금의 FIRST_BUY_RATIO(50%) × 수수료버퍼
+                buy_amount = krw_balance * FIRST_BUY_RATIO * BUY_FEE_BUFFER
+                buy_order = '1차'
+                buy_order_num = 1
+            else:
+                # 2차 매수: 잔여현금 전량 × 수수료버퍼
+                buy_amount = krw_balance * BUY_FEE_BUFFER
+                buy_order = '2차'
+                buy_order_num = 2
             
             # ========================================
-            # Step 4: 매수 금액 결정 (안전하게)
-            # ========================================
-            available_for_buy = krw_balance * 0.9995
-            buy_amount = min(target_position_size, available_for_buy)
-            
-            # ========================================
-            # Step 5: 최소 주문 금액 체크 (5,000원)
+            # Step 4: 최소 주문 금액 체크 (5,000원)
             # ========================================
             if buy_amount < 5000:
                 print(f"{Colors.YELLOW}[Buy Limit] 매수 금액 부족{Colors.ENDC}")
                 print(f"  └ 총자산: {total_assets:,.0f}원 | 가용현금: {krw_balance:,.0f}원")
-                print(f"  └ 목표포지션: {target_position_size:,.0f}원 | 실제매수가능: {buy_amount:,.0f}원 < 5,000원")
+                print(f"  └ {buy_order}매수 계산: {buy_amount:,.0f}원 < 5,000원")
                 return False
             
             # ========================================
@@ -2657,14 +2704,21 @@ def execute_buy(ticker, signal):
             coin_value = total_assets - krw_balance
             print(f"{Colors.CYAN}[Buy Info] 총자산: {total_assets:,.0f}원 "
                   f"(코인: {coin_value:,.0f}원 + 현금: {krw_balance:,.0f}원){Colors.ENDC}")
-            print(f"{Colors.CYAN}[Buy Info] 목표포지션: {target_position_size:,.0f}원 | "
-                  f"실제매수: {buy_amount:,.0f}원{Colors.ENDC}")
+            
+            if current_holding_count == 0:
+                print(f"{Colors.CYAN}[Buy Info] {buy_order}매수 | "
+                      f"현금{krw_balance:,.0f} × {FIRST_BUY_RATIO:.0%} × {BUY_FEE_BUFFER} = "
+                      f"{buy_amount:,.0f}원{Colors.ENDC}")
+            else:
+                print(f"{Colors.CYAN}[Buy Info] {buy_order}매수 | "
+                      f"잔여현금{krw_balance:,.0f} × {BUY_FEE_BUFFER} = "
+                      f"{buy_amount:,.0f}원{Colors.ENDC}")
             
             # ========================================
             # TEST MODE: 시뮬레이션
             # ========================================
             if TEST_MODE:
-                print(f"{Colors.GREEN}[TEST] 매수 시뮬레이션: {ticker} {buy_amount:,.0f}원{Colors.ENDC}")
+                print(f"{Colors.GREEN}[TEST] {buy_order}매수 시뮬레이션: {ticker} {buy_amount:,.0f}원{Colors.ENDC}")
                 
                 with held_coins_lock:
                     held_coins[ticker] = {
@@ -2675,11 +2729,12 @@ def execute_buy(ticker, signal):
                         'peak_time': datetime.now(),
                         'peak_bb_position': signal.get('bb_position', 50),
                         'buy_reason': signal['reason'],
-                        'buy_mode': signal.get('mode', 'VOLATILITY_V91'),
+                        'buy_mode': signal.get('mode', 'BOUNCE_V10'),
                         'entry_bb_width': signal.get('bb_width_pct', 2.0),
                         'bb_width_zone': signal.get('bb_width_zone', 'UNKNOWN'),
                         'target_profit': signal.get('target_profit', 2.0),
-                        'ticker': ticker
+                        'ticker': ticker,
+                        'buy_order': buy_order_num    # [v10.2] 몇 차 매수인지
                     }
                 
                 daily_trade_count += 1
@@ -2699,7 +2754,8 @@ def execute_buy(ticker, signal):
                     print(f"{Colors.RED}[Buy Failed] 매수 직전 잔고 부족{Colors.ENDC}")
                     print(f"  └ 필요금액: {buy_amount:,.0f}원 | 실제잔고: {final_krw:,.0f}원")
                     if final_krw and final_krw >= 5000:
-                        buy_amount = final_krw * 0.9995
+                        # 잔고에 맞춰 재조정 (수수료 버퍼 적용)
+                        buy_amount = final_krw * BUY_FEE_BUFFER
                         print(f"{Colors.CYAN}[Buy Info] 잔고에 맞춰 재조정: {buy_amount:,.0f}원{Colors.ENDC}")
                     else:
                         return False
@@ -2744,18 +2800,19 @@ def execute_buy(ticker, signal):
                         'peak_time': datetime.now(),
                         'peak_bb_position': signal.get('bb_position', 50),
                         'buy_reason': signal['reason'],
-                        'buy_mode': signal.get('mode', 'VOLATILITY_V91'),
+                        'buy_mode': signal.get('mode', 'BOUNCE_V10'),
                         'entry_bb_width': signal.get('bb_width_pct', 2.0),
                         'bb_width_zone': signal.get('bb_width_zone', 'UNKNOWN'),
                         'target_profit': signal.get('target_profit', 2.0),
-                        'ticker': ticker
+                        'ticker': ticker,
+                        'buy_order': buy_order_num    # [v10.2] 몇 차 매수인지
                     }
                 
                 daily_trade_count += 1
                 daily_buy_count += 1
                 total_trades += 1
                 
-                print(f"{Colors.GREEN}[Buy Success] {ticker} @ {actual_buy_price:,.0f}원 "
+                print(f"{Colors.GREEN}[Buy Success] {buy_order}매수 {ticker} @ {actual_buy_price:,.0f}원 "
                       f"(투자액: {buy_amount:,.0f}원){Colors.ENDC}")
                 
                 send_buy_notification(ticker, signal, buy_amount, total_assets)
@@ -2781,6 +2838,7 @@ def execute_buy(ticker, signal):
         print(f"{Colors.RED}[Buy Error] 예외 발생: {e}{Colors.ENDC}")
         traceback.print_exc()
         return False
+
     
 def execute_sell(ticker, signal):
     """
@@ -3511,6 +3569,7 @@ def main():
 
 **전략:**
   - 매수: 일봉양봉→BB하단(5-35%)→다중반등확인(3/5+)
+  - 포지션: 1차 현금{FIRST_BUY_RATIO:.0%} → 2차 잔여전량 (버퍼 {BUY_FEE_BUFFER})
   - 매도: 트레일링스탑+선행하락감지+극과매수익절
   - 지표: RSI+S-RSI+MACD+양봉+거래량
   - 손절: -2.5%
