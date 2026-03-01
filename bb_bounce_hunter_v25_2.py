@@ -326,16 +326,51 @@ class UpbitAPI:
         return {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
 
     def get_balances(self):
-        try:
-            headers = self._auth_headers()
-            resp = requests.get(f"{UPBIT_API_BASE}/v1/accounts", headers=headers, timeout=10)
-            if resp.status_code == 200:
-                return resp.json()
-            return None
-        except Exception as e:
-            if DEBUG_MODE:
-                print(f"{Colors.RED}[API] get_balances 예외: {e}{Colors.ENDC}")
-            return None
+    # """[v25.2 수정] 비200 응답 시 상태코드·응답본문 출력으로 원인 진단 가능"""
+        for attempt in range(1, 4):  # 최대 3회 재시도
+            try:
+                headers = self._auth_headers()
+                resp = requests.get(
+                    f"{UPBIT_API_BASE}/v1/accounts",
+                    headers=headers,
+                    timeout=10
+                )
+                if resp.status_code == 200:
+                    return resp.json()
+
+                # [수정] 실패 원인 명시적 출력
+                try:
+                    err_body = resp.json()
+                    err_msg = err_body.get('error', {}).get('message', resp.text[:200])
+                    err_name = err_body.get('error', {}).get('name', '')
+                except Exception:
+                    err_msg = resp.text[:200]
+                    err_name = ''
+
+                print(f"{Colors.RED}[API] get_balances 실패 (시도 {attempt}/3)"
+                    f" HTTP {resp.status_code} | {err_name}: {err_msg}{Colors.ENDC}")
+
+                if resp.status_code == 401:
+                    print(f"{Colors.RED}  └ 원인: API 키 인증 실패 — .env 파일의 "
+                        f"UPBIT_ACCESS_KEY / UPBIT_SECRET_KEY 확인 필요{Colors.ENDC}")
+                    return None  # 인증 오류는 재시도 무의미
+
+                if resp.status_code == 429:
+                    wait = 5 * attempt
+                    print(f"{Colors.YELLOW}  └ Rate Limit → {wait}초 대기 후 재시도{Colors.ENDC}")
+                    time.sleep(wait)
+                    continue
+
+                time.sleep(2 * attempt)
+
+            except requests.exceptions.ConnectionError as e:
+                print(f"{Colors.YELLOW}[API] get_balances 연결 오류 (시도 {attempt}/3): {e}{Colors.ENDC}")
+                time.sleep(3 * attempt)
+            except Exception as e:
+                print(f"{Colors.RED}[API] get_balances 예외 (시도 {attempt}/3): {e}{Colors.ENDC}")
+                time.sleep(2)
+
+        return None
 
     def get_balance(self, currency):
         try:
@@ -1483,13 +1518,10 @@ def sell_signal(df, buy_price, buy_time=None, held_info=None):
 
 def sync_held_coins_with_exchange():
     """
-    [v25.1 수정] 봇 시작 시 거래소 보유량 동기화
-
-    핵심 수정사항:
-    ① avg_buy_price = 0인 경우 current_price로 대체 (업비트 API 반환 이슈 대응)
-    ② FIXED_STABLE_COINS 코인은 잔고 > 0이면 무조건 held_coins 등록
-    ③ 동기화 실패 코인 목록 별도 추적 및 경고
-    ④ 동기화 완료 후 전체 자산 현황 Discord 전송
+    [v25.2 수정]
+    ① get_balances() 실패 시 최대 3회 재시도
+    ② balances = [] (빈 배열) 와 None 구분 처리
+    ③ 동기화 실패 시 Discord 긴급 알림 + 원인 명시
     """
     global held_coins
 
@@ -1497,151 +1529,152 @@ def sync_held_coins_with_exchange():
     print(f"[Init] 기존 보유 코인 동기화 시작...")
     print(f"{'='*55}{Colors.ENDC}")
 
-    try:
+    # ── [수정] 잔고 조회 재시도 ──────────────────────────────
+    balances = None
+    for attempt in range(1, 4):
         balances = upbit.get_balances()
-        if not balances:
-            print(f"{Colors.RED}[Init] 잔고 조회 실패 (API 응답 없음){Colors.ENDC}")
-            send_error_notification("Sync Failed", "get_balances() returned None")
-            return False
+        if balances is not None:
+            break
+        print(f"{Colors.YELLOW}[Init] 잔고 조회 재시도 {attempt}/3...{Colors.ENDC}")
+        time.sleep(3)
 
-        synced_coins = []       # 정상 동기화된 코인 정보
-        skipped_coins = []      # 잔고 부족으로 스킵
-        unmanaged_coins = []    # 관리 목록 외 코인
-        zero_price_coins = []   # 현재가 조회 실패
-
-        managed_tickers = set(FIXED_STABLE_COINS)
-
-        for bal in balances:
-            currency = bal.get('currency', '')
-            if currency == 'KRW':
-                continue
-
-            balance = float(bal.get('balance', 0.0))
-            locked  = float(bal.get('locked', 0.0))
-            total_balance = balance + locked  # 주문 잠금 포함
-
-            if total_balance <= 0:
-                continue
-
-            ticker    = f"KRW-{currency}"
-            is_managed = ticker in managed_tickers
-
-            # ── 현재가 조회 ──
-            current_price = get_current_price(ticker)
-            if not current_price:
-                # REST fallback
-                try:
-                    current_price = _get_price_rest_single(ticker)
-                except Exception:
-                    current_price = None
-
-            coin_value = total_balance * current_price if current_price else 0.0
-
-            # ── avg_buy_price 처리 [핵심 수정] ──
-            avg_price_raw = float(bal.get('avg_buy_price', 0.0))
-
-            if avg_price_raw > 0:
-                avg_price = avg_price_raw
-                price_source = "실제매수가"
-            elif current_price and current_price > 0:
-                # avg_buy_price = 0인 경우 → current_price로 대체
-                avg_price = current_price
-                price_source = "현재가대체(avg=0)"
-                print(f"{Colors.YELLOW}  ⚠️  {currency}: avg_buy_price=0 → 현재가 {current_price:,.0f}원으로 대체{Colors.ENDC}")
-            else:
-                # 현재가도 없음 → 관리 코인이면 임시값 1로 등록, 비관리는 스킵
-                if is_managed and total_balance > 0:
-                    avg_price = 1.0
-                    price_source = "임시값(조회실패)"
-                    zero_price_coins.append(currency)
-                    print(f"{Colors.RED}  ⚠️  {currency}: 현재가 조회 실패 → 임시 등록{Colors.ENDC}")
-                else:
-                    skipped_coins.append(f"{currency}(가격조회실패)")
-                    continue
-
-            # ── 등록 기준 판단 [핵심 수정] ──
-            should_register = False
-            if is_managed and total_balance > 0:
-                # 관리 대상 코인은 잔고 > 0이면 무조건 등록
-                should_register = True
-            elif not is_managed and coin_value >= 5000:
-                # 비관리 코인은 평가금액 5천원 이상만 등록
-                should_register = True
-                unmanaged_coins.append(f"  - {currency}: {total_balance:.6f}개 ({coin_value:,.0f}원)")
-            else:
-                skipped_coins.append(f"{currency}({coin_value:,.0f}원)")
-                continue
-
-            if not should_register:
-                continue
-
-            # ── held_coins 등록 ──
-            profit_pct = ((current_price - avg_price) / avg_price * 100) if (current_price and avg_price > 0) else 0.0
-            peak_price  = max(avg_price, current_price) if current_price else avg_price
-
-            with held_coins_lock:
-                held_coins[ticker] = {
-                    'buy_price':     avg_price,
-                    'buy_time':      datetime.now() - timedelta(hours=1),  # 보수적 보유시간
-                    'buy_amount':    total_balance * avg_price,
-                    'peak_price':    peak_price,
-                    'peak_time':     datetime.now(),
-                    'buy_reason':    f'동기화 ({price_source})',
-                    'ticker':        ticker,
-                    'buy_order':     1,
-                    'managed':       is_managed,
-                    'market_grade':  current_market_grade,
-                    'param_snapshot': get_grade_params(),
-                    'synced':        True,   # 동기화 코인 구분 플래그
-                }
-
-            # 로그 정보 수집
-            managed_tag = "✅ 관리" if is_managed else "⚠️  비관리"
-            price_str   = f"{current_price:,.0f}원" if current_price else "조회불가"
-            synced_coins.append({
-                'ticker':   ticker,
-                'currency': currency,
-                'balance':  total_balance,
-                'avg_price': avg_price,
-                'cur_price': current_price or 0,
-                'coin_value': coin_value,
-                'profit_pct': profit_pct,
-                'managed':   is_managed,
-                'price_source': price_source,
-            })
-
-            profit_sign = "+" if profit_pct >= 0 else ""
-            print(f"  {managed_tag} {currency}: {total_balance:.6f}개 "
-                  f"@ {avg_price:,.0f}원 [{price_source}]"
-                  f" → 현재 {price_str} ({profit_sign}{profit_pct:.2f}%)")
-
-        # ── 결과 출력 ──
-        print(f"\n{Colors.GREEN}[Init] 동기화 완료: {len(synced_coins)}개 등록"
-              f" | {len(skipped_coins)}개 스킵{Colors.ENDC}")
-
-        if skipped_coins:
-            print(f"{Colors.YELLOW}  스킵: {', '.join(skipped_coins)}{Colors.ENDC}")
-
-        if unmanaged_coins:
-            print(f"{Colors.YELLOW}[Init] 비관리 코인 (관리 중):{Colors.ENDC}")
-            for line in unmanaged_coins:
-                print(f"{Colors.YELLOW}{line}{Colors.ENDC}")
-
-        if zero_price_coins:
-            print(f"{Colors.RED}[Init] 가격 조회 실패 코인 (임시 등록): {', '.join(zero_price_coins)}{Colors.ENDC}")
-
-        # ── Discord 동기화 알림 ──
-        _send_sync_discord_report(synced_coins, skipped_coins, unmanaged_coins)
-
-        return True
-
-    except Exception as e:
-        err_trace = traceback.format_exc()
-        print(f"{Colors.RED}[Init Error] 동기화 중 예외: {e}{Colors.ENDC}")
-        if DEBUG_MODE:
-            print(err_trace)
-        send_error_notification("Sync Exception", err_trace[:500])
+    if balances is None:
+        print(f"{Colors.RED}[Init] 잔고 조회 3회 모두 실패 — API 키·네트워크 확인 필요{Colors.ENDC}")
+        print(f"{Colors.RED}  ACCESS_KEY 로드 여부: {'✅' if ACCESS_KEY else '❌ None'}{Colors.ENDC}")
+        print(f"{Colors.RED}  SECRET_KEY 로드 여부: {'✅' if SECRET_KEY else '❌ None'}{Colors.ENDC}")
+        send_error_notification(
+            "Sync Failed - API Error",
+            f"get_balances() 3회 실패\n"
+            f"ACCESS_KEY 존재: {bool(ACCESS_KEY)}\n"
+            f"SECRET_KEY 존재: {bool(SECRET_KEY)}"
+        )
         return False
+
+    # ── [수정] 빈 배열은 실패가 아님 (코인 없는 계좌) ─────────
+    if len(balances) == 0:
+        print(f"{Colors.YELLOW}[Init] 잔고 없음 (빈 계좌) — 동기화 코인 0개{Colors.ENDC}")
+        return True  # 실패가 아님
+
+    # ── 이하 기존 동기화 로직 (동일) ──────────────────────────
+    synced_coins = []
+    skipped_coins = []
+    unmanaged_coins = []
+    zero_price_coins = []
+    managed_tickers = set(FIXED_STABLE_COINS)
+
+    for bal in balances:
+        currency = bal.get('currency', '')
+        if currency == 'KRW':
+            continue
+
+        balance = float(bal.get('balance', 0.0))
+        locked  = float(bal.get('locked', 0.0))
+        total_balance = balance + locked
+
+        if total_balance <= 0:
+            continue
+
+        ticker    = f"KRW-{currency}"
+        is_managed = ticker in managed_tickers
+
+        current_price = get_current_price(ticker)
+        if not current_price:
+            try:
+                current_price = _get_price_rest_single(ticker)
+            except Exception:
+                current_price = None
+
+        coin_value = total_balance * current_price if current_price else 0.0
+
+        avg_price_raw = float(bal.get('avg_buy_price', 0.0))
+
+        if avg_price_raw > 0:
+            avg_price = avg_price_raw
+            price_source = "실제매수가"
+        elif current_price and current_price > 0:
+            avg_price = current_price
+            price_source = "현재가대체(avg=0)"
+            print(f"{Colors.YELLOW}  ⚠️  {currency}: avg_buy_price=0 → 현재가 {current_price:,.0f}원으로 대체{Colors.ENDC}")
+        else:
+            if is_managed and total_balance > 0:
+                avg_price = 1.0
+                price_source = "임시값(조회실패)"
+                zero_price_coins.append(currency)
+                print(f"{Colors.RED}  ⚠️  {currency}: 현재가 조회 실패 → 임시 등록{Colors.ENDC}")
+            else:
+                skipped_coins.append(f"{currency}(가격조회실패)")
+                continue
+
+        should_register = False
+        if is_managed and total_balance > 0:
+            should_register = True
+        elif not is_managed and coin_value >= 5000:
+            should_register = True
+            unmanaged_coins.append(f"  - {currency}: {total_balance:.6f}개 ({coin_value:,.0f}원)")
+        else:
+            skipped_coins.append(f"{currency}({coin_value:,.0f}원)")
+            continue
+
+        if not should_register:
+            continue
+
+        profit_pct = ((current_price - avg_price) / avg_price * 100) if (current_price and avg_price > 0) else 0.0
+        peak_price = max(avg_price, current_price) if current_price else avg_price
+
+        with held_coins_lock:
+            held_coins[ticker] = {
+                'buy_price':      avg_price,
+                'buy_time':       datetime.now() - timedelta(hours=1),
+                'buy_amount':     total_balance * avg_price,
+                'peak_price':     peak_price,
+                'peak_time':      datetime.now(),
+                'buy_reason':     f'동기화 ({price_source})',
+                'ticker':         ticker,
+                'buy_order':      1,
+                'managed':        is_managed,
+                'market_grade':   current_market_grade,
+                'param_snapshot': get_grade_params(),
+                'synced':         True,
+            }
+
+        managed_tag = "✅ 관리" if is_managed else "⚠️  비관리"
+        price_str = f"{current_price:,.0f}원" if current_price else "조회불가"
+        synced_coins.append({
+            'ticker': ticker, 'currency': currency,
+            'balance': total_balance, 'avg_price': avg_price,
+            'cur_price': current_price or 0, 'coin_value': coin_value,
+            'profit_pct': profit_pct, 'managed': is_managed,
+            'price_source': price_source,
+        })
+
+        profit_sign = "+" if profit_pct >= 0 else ""
+        print(f"  {managed_tag} {currency}: {total_balance:.6f}개 "
+              f"@ {avg_price:,.0f}원 [{price_source}]"
+              f" → 현재 {price_str} ({profit_sign}{profit_pct:.2f}%)")
+
+    print(f"\n{Colors.GREEN}[Init] 동기화 완료: {len(synced_coins)}개 등록"
+          f" | {len(skipped_coins)}개 스킵{Colors.ENDC}")
+
+    if skipped_coins:
+        print(f"{Colors.YELLOW}  스킵: {', '.join(skipped_coins)}{Colors.ENDC}")
+    if unmanaged_coins:
+        print(f"{Colors.YELLOW}[Init] 비관리 코인:{Colors.ENDC}")
+        for line in unmanaged_coins:
+            print(f"{Colors.YELLOW}{line}{Colors.ENDC}")
+    if zero_price_coins:
+        print(f"{Colors.RED}[Init] 가격 조회 실패 (임시 등록): {', '.join(zero_price_coins)}{Colors.ENDC}")
+
+    _send_sync_discord_report(synced_coins, skipped_coins, unmanaged_coins)
+    return True
+
+    # except Exception as e:
+    #     err_trace = traceback.format_exc()
+    #     print(f"{Colors.RED}[Init Error] 동기화 중 예외: {e}{Colors.ENDC}")
+    #     if DEBUG_MODE:
+    #         print(err_trace)
+    #     send_error_notification("Sync Exception", err_trace[:500])
+    #     return False
+
 
 def _send_sync_discord_report(synced_coins, skipped_coins, unmanaged_coins):
     """sync_held_coins_with_exchange() 내부용 Discord 보고"""
@@ -1698,34 +1731,50 @@ def _send_sync_discord_report(synced_coins, skipped_coins, unmanaged_coins):
 
 def send_startup_asset_report():
     """
-    [v25.1 신규] 봇 시작 시 전체 자산 현황 터미널 + Discord 전송
-
-    sync_held_coins_with_exchange() 완료 후 main()에서 호출.
-    현금 부족 여부에 따른 동작 모드 안내 포함.
+    [v25.2 수정]
+    ① held_coins_lock 밖에서 스냅샷 복사 후 API 호출
+    ② get_balances() 1회만 호출해 KRW + 코인 잔고 동시 처리
+    ③ API 실패 시에도 held_coins 정보로 부분 출력
     """
     try:
-        # 잔고 조회
+        # ── 잔고 한 번만 조회 ──
         balances = upbit.get_balances()
         krw_balance = 0.0
+        exchange_coin_balances = {}  # currency → balance
+
         if balances:
             for bal in balances:
-                if bal.get('currency') == 'KRW':
+                currency = bal.get('currency', '')
+                if currency == 'KRW':
                     krw_balance = float(bal.get('balance', 0.0))
-                    break
+                else:
+                    b = float(bal.get('balance', 0.0))
+                    lk = float(bal.get('locked', 0.0))
+                    if b + lk > 0:
+                        exchange_coin_balances[currency] = b + lk
+        else:
+            print(f"{Colors.RED}[Startup Report] 잔고 조회 실패 — API 키 확인 필요{Colors.ENDC}")
 
-        total_coin_value = 0.0
+        # ── held_coins 스냅샷 (락 최소화) ──
         with held_coins_lock:
-            for ticker, info in held_coins.items():
-                try:
-                    cur_price = get_current_price(ticker)
-                    if cur_price:
-                        bal_amount = upbit.get_balance(ticker) or 0.0
-                        total_coin_value += bal_amount * cur_price
-                except Exception:
-                    pass
+            held_snapshot = dict(held_coins)  # 얕은 복사로 락 빠르게 해제
+
+        # ── 코인 평가액 계산 (락 밖에서) ──
+        total_coin_value = 0.0
+        for ticker, info in held_snapshot.items():
+            try:
+                cur_price = get_current_price(ticker)
+                if not cur_price:
+                    cur_price = info.get('buy_price', 0)
+                currency = ticker.replace('KRW-', '')
+                bal_amount = exchange_coin_balances.get(currency, 0.0)
+                if bal_amount > 0 and cur_price > 0:
+                    total_coin_value += bal_amount * cur_price
+            except Exception:
+                pass
 
         total_assets = krw_balance + total_coin_value
-        can_buy      = krw_balance >= 5000
+        can_buy = krw_balance >= 5000
 
         # ── 터미널 출력 ──
         print(f"\n{Colors.BOLD}{Colors.CYAN}{'━'*55}")
@@ -1734,8 +1783,15 @@ def send_startup_asset_report():
         print(f"  총 자산:    {total_assets:>15,.0f} 원")
         print(f"  코인 평가:  {total_coin_value:>15,.0f} 원")
         print(f"  현금(KRW): {krw_balance:>15,.0f} 원")
-        with held_coins_lock:
-            print(f"  보유 코인:  {len(held_coins):>15} 개")
+        print(f"  보유 코인:  {len(held_snapshot):>15} 개")
+
+        if held_snapshot:
+            print(f"\n  {Colors.BOLD}보유 상세:{Colors.ENDC}")
+            for ticker, info in held_snapshot.items():
+                coin = ticker.replace('KRW-', '')
+                cur_price = get_current_price(ticker) or info.get('buy_price', 0)
+                pft = ((cur_price - info['buy_price']) / info['buy_price'] * 100) if info['buy_price'] > 0 else 0
+                print(f"    - {coin}: 매수가 {info['buy_price']:,.0f}원 → 현재 {cur_price:,.0f}원 ({pft:+.2f}%)")
 
         if can_buy:
             print(f"\n  {Colors.GREEN}✅ 매수 가능 상태 — 전체 로직 실행{Colors.ENDC}")
@@ -1747,6 +1803,7 @@ def send_startup_asset_report():
 
     except Exception as e:
         print(f"{Colors.RED}[Startup Report Error] {e}{Colors.ENDC}")
+        traceback.print_exc()
 
 # ============================================================================
 # SECTION 16: 거래 실행 함수 (상세 로그 + 안전장치 복원)
