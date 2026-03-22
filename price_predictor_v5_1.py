@@ -42,6 +42,7 @@ except ImportError:
 # ============================================================================
 
 VERSION = "5.1"
+DEBUG_MODE_PRED = True   # True: get_prediction() 내부 예외 스택트레이스 출력
 
 COINS = {
     1: "KRW-ETH",  2: "KRW-XRP",  3: "KRW-SOL",
@@ -2222,12 +2223,14 @@ def get_prediction(ticker, pred_count=None, train_count=None):
     """
     BB Bounce Hunter v33 통합 공개 API (스레드 안전, Lock 적용)
 
-    v5.0 개선:
-    - v4 전체 호환: 모델 pkl 우선 로드 + 캐시 파라미터
-    - 풀 LGB로 학습 (API 호출 시에는 정확도 우선)
+    v5.1 개선:
+    - Lock 범위 축소: 파라미터 조회/캐시 저장에만 Lock 적용
+      → 학습·API 호출은 Lock 밖에서 실행 (교착 위험 제거)
+    - 예외 로깅 강화: except Exception에서 실제 오류 출력
+    - ok=False 시 실패 원인 코드 포함
 
     Usage:
-        from price_predictor_v5 import get_prediction
+        from price_predictor_v5_1 import get_prediction
         pred = get_prediction("KRW-XRP")
 
     Returns:
@@ -2245,80 +2248,112 @@ def get_prediction(ticker, pred_count=None, train_count=None):
                        'prob_up': 0.33, 'prob_neu': 0.34, 'prob_dn': 0.33,
                        'conf': '낮음'}
            for n in range(1, PREDICT_STEPS + 1)}
-    _FB.update({'signal': 'NEUTRAL', 'confidence': 'LOW', 'ok': False, 'params': {}})
+    _FB.update({'signal': 'NEUTRAL', 'confidence': 'LOW', 'ok': False,
+                'params': {}, 'fail_reason': 'unknown'})
 
+    coin = ticker.replace('KRW-', '')
+
+    # ── Step 1: 파라미터 결정 (Lock 필요 없음, 읽기 전용) ──
     try:
-        with _predict_lock:
-            coin = ticker.replace('KRW-', '')
+        cache = load_optimal_cache(coin)
+        if cache:
+            tc  = cache['optimal_train']
+            pc  = cache['optimal_pred']
+            thr = cache['optimal_threshold']
+            lgb_ov = cache.get('optimal_lgb')
+            adaptive = cache.get('adaptive_threshold')
+            if adaptive:
+                thr = adaptive
+        else:
+            tc  = DEFAULT_TRAIN
+            pc  = DEFAULT_PRED
+            thr = DEFAULT_THRESHOLD
+            lgb_ov = None
 
-            # 캐시에서 최적 파라미터 로드
-            cache = load_optimal_cache(coin)
-            if cache:
-                tc  = cache['optimal_train']
-                pc  = cache['optimal_pred']
-                thr = cache['optimal_threshold']
-                lgb_ov = cache.get('optimal_lgb')
-                adaptive = cache.get('adaptive_threshold')
-                if adaptive:
-                    thr = adaptive
-            else:
-                tc  = DEFAULT_TRAIN
-                pc  = DEFAULT_PRED
-                thr = DEFAULT_THRESHOLD
-                lgb_ov = None
+        if pred_count  is not None: pc = pred_count
+        if train_count is not None: tc = train_count
+    except Exception as e:
+        print(f"[Predictor] {coin} 파라미터 로드 오류: {e}")
+        tc, pc, thr, lgb_ov = DEFAULT_TRAIN, DEFAULT_PRED, DEFAULT_THRESHOLD, None
 
-            # 인자 오버라이드
-            if pred_count  is not None: pc = pred_count
-            if train_count is not None: tc = train_count
+    # ── Step 2: 모델 로드 또는 학습 (Lock 불필요 — 코인별 독립) ──
+    try:
+        models = load_models(coin)
+        if models:
+            # pkl 로드 성공 → 예측용 캔들만 수집
+            df_pred = fetch_candles_15m(ticker, pc + 30)
+            if df_pred is None or len(df_pred) < MIN_CANDLES:
+                fb = dict(_FB); fb['fail_reason'] = f'pred_candle_부족({0 if df_pred is None else len(df_pred)}봉)'
+                print(f"[Predictor] {coin} 예측 캔들 부족 → ok=False")
+                return fb
+        else:
+            # pkl 없음 → 신규 학습
+            print(f"[Predictor] {coin} pkl 없음 → 신규 학습 시작 (train={tc} pred={pc})")
+            total = tc + pc + 30
+            df_all = fetch_candles_15m(ticker, total)
+            if df_all is None or len(df_all) < tc + pc:
+                fb = dict(_FB); fb['fail_reason'] = f'train_candle_부족({0 if df_all is None else len(df_all)}봉/{tc+pc}필요)'
+                print(f"[Predictor] {coin} 학습 캔들 부족 → ok=False")
+                return fb
 
-            # pkl 모델 우선 로드
-            models = load_models(coin)
-            if models:
-                df_pred = fetch_candles_15m(ticker, pc + 30)
-                if df_pred is None or len(df_pred) < MIN_CANDLES:
-                    return _FB
-            else:
-                total = tc + pc + 30
-                df_all = fetch_candles_15m(ticker, total)
-                if df_all is None or len(df_all) < tc + pc:
-                    return _FB
+            df_train = df_all.iloc[-(tc + pc):-pc]
+            df_pred  = df_all.iloc[-pc:]
 
-                df_train = df_all.iloc[-(tc + pc):-pc]
-                df_pred  = df_all.iloc[-pc:]
+            models = train_models(df_train, threshold=thr,
+                                  lgb_overrides=lgb_ov, verbose=False,
+                                  search_mode=False)
+            if not models:
+                fb = dict(_FB); fb['fail_reason'] = 'train_models_실패'
+                print(f"[Predictor] {coin} 모델 학습 실패 → ok=False")
+                return fb
 
-                # v5.0: API 호출 시에는 풀 LGB (search_mode=False)
-                models = train_models(df_train, threshold=thr,
-                                      lgb_overrides=lgb_ov, verbose=False,
-                                      search_mode=False)
-                if not models:
-                    return _FB
+            # Lock 안에서만 저장 (파일 쓰기 경합 방지)
+            with _predict_lock:
                 save_models(models, coin, threshold=thr, lgb_overrides=lgb_ov)
+            print(f"[Predictor] {coin} 신규 학습 완료 → pkl 저장")
 
-            results = predict_single(df_pred, models)
-            if not results:
-                return _FB
+    except Exception as e:
+        import traceback
+        fb = dict(_FB); fb['fail_reason'] = f'model_exception:{e}'
+        print(f"[Predictor] {coin} 모델 로드/학습 예외: {e}")
+        if DEBUG_MODE_PRED:
+            traceback.print_exc()
+        return fb
 
-            out = {}
-            for r in results:
-                out[f"t+{r['step']}"] = {
-                    'label':    r['label'],
-                    'direction': DIR_ENG[r['label']],
-                    'prob_up':  r['prob_up'],
-                    'prob_neu': r['prob_neu'],
-                    'prob_dn':  r['prob_dn'],
-                    'conf':     r['conf'],
-                }
+    # ── Step 3: 예측 실행 ──
+    try:
+        results = predict_single(df_pred, models)
+        if not results:
+            fb = dict(_FB); fb['fail_reason'] = 'predict_single_None'
+            print(f"[Predictor] {coin} predict_single 반환 None → ok=False")
+            return fb
 
-            _, sig_eng = compute_signal(results)
-            out['signal']     = sig_eng
-            avg_max           = np.mean([r['max_prob'] for r in results[:3]])
-            out['confidence'] = 'HIGH' if avg_max >= 0.55 else 'MID' if avg_max >= 0.45 else 'LOW'
-            out['ok']         = True
-            out['params']     = {'train': tc, 'pred': pc, 'threshold': thr}
-            return out
+        out = {}
+        for r in results:
+            out[f"t+{r['step']}"] = {
+                'label':    r['label'],
+                'direction': DIR_ENG[r['label']],
+                'prob_up':  r['prob_up'],
+                'prob_neu': r['prob_neu'],
+                'prob_dn':  r['prob_dn'],
+                'conf':     r['conf'],
+            }
 
-    except Exception:
-        return _FB
+        _, sig_eng = compute_signal(results)
+        out['signal']     = sig_eng
+        avg_max           = np.mean([r['max_prob'] for r in results[:3]])
+        out['confidence'] = 'HIGH' if avg_max >= 0.55 else 'MID' if avg_max >= 0.45 else 'LOW'
+        out['ok']         = True
+        out['params']     = {'train': tc, 'pred': pc, 'threshold': thr}
+        return out
+
+    except Exception as e:
+        import traceback
+        fb = dict(_FB); fb['fail_reason'] = f'predict_exception:{e}'
+        print(f"[Predictor] {coin} 예측 실행 예외: {e}")
+        if DEBUG_MODE_PRED:
+            traceback.print_exc()
+        return fb
 
 
 # ============================================================================
